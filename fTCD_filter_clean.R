@@ -21,8 +21,8 @@ data2$stim_on<-car::recode(data2$stim_on,"0=100;1=110")
 
 library(eegkit)
 
-data1$filtered_L = eegfilter(data1$heartbeatcorrected_L, Fs = 25, lower = 1/100, upper = 5, method = "butter", order = 2)
-data2$filtered_L = eegfilter(data2$heartbeatcorrected_L, Fs = 25, lower = 1/100, upper = 5, method = "butter", order = 2)
+data1$filtered_L = eegfilter(data1$heartbeatcorrected_L, Fs = 25, lower = 1/100, upper = 5, method = "butter", order = 4)
+data2$filtered_L = eegfilter(data2$heartbeatcorrected_L, Fs = 25, lower = 1/100, upper = 5, method = "butter", order = 4)
 # bf <- butter(2,1/1200*2, type="low")
 # data1$filtered_L = signal:::filter(bf, data1$heartbeatcorrected_L)
 # data2$filtered_L = signal:::filter(bf, data2$heartbeatcorrected_L)
@@ -48,9 +48,11 @@ ggplot(long_ts2, aes(x = sec, y = y)) +
 
 long_ts2<-long_ts %>% dplyr::filter(.,signal=='heartbeatcorrected_L'|signal=='stim_on')
 
+fTCD.bold.resp2 <- fmri.stimulus(scans = dim(data)[1], onsets = c(1,1+which(diff(data1$stim_on)!=0))[seq(2, length(c(1,1+which(diff(data1$stim_on)!=0))), by = 2)], durations = 500, TR = 1/25,type="boxcar",scale=1)
+
 ggplot(long_ts2, aes(x = sec, y = y)) + 
   geom_line(aes(color=signal))+facet_grid(id~.)+
-  theme_minimal()+theme(legend.position='top') 
+  theme_minimal()+theme(legend.position='top') + geom_line(data=data.frame(y=fTCD.bold.resp2+100,x=seq(1:1239)),aes(y=y,x=x),color="black") 
 
 #============================================================================================================================#
 

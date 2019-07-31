@@ -39,9 +39,22 @@ Lindquist_HRF <- function(t, par = NULL) {
   
 }
 
+c(1,1+which(diff(v)!=0))
+
 # Functions from the fmri package, with parameters adapted for fTCD input.
 
-fTCD.bold.resp <- fmri.stimulus(scans = 1, onsets = c(1), durations = c(1), TR = 2,type="user",hrf=Lindquist_HRF,par='path/datafile location',scale=1)
+fTCD.bold.resp1 <- fmri.stimulus(scans = 1, onsets = c(1), durations = c(1), TR = 2,type="boxcar", scale=1)
+
+fTCD.bold.resp2 <- fmri.stimulus(scans = dim(data)[1], onsets = c(1,1+which(diff(data1$stim_on)!=0))[seq(2, length(c(1,1+which(diff(data1$stim_on)!=0))), by = 2)], durations = 500, TR = 1/25,type="boxcar",scale=1)
+
+
+my_des<-fmri.design(fTCD.bold.resp2)
+
+par(mfrow=c(2, 2))
+for (i in 1:4) plot(my_des[, i], type="l")
+par(mfrow=c(1, 1))
+
+glm.fit(x=my_des,y=data1$heartbeatcorrected_L)
 
 
 
