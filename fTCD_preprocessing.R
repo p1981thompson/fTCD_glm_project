@@ -43,6 +43,7 @@ norigmarkers = length(origmarkerlist)
 # Stimulus timings: Word Gen starts 5 seconds after marker and continues for 20 seconds (including REPORT phase)
 stim_delay_sec <- 5
 stim_delay_samples <- stim_delay_sec * samplingrate
+wg_starts <- origmarkerlist + stim_delay_samples
 stim_length_sec <- 20
 stim_length_samples <- stim_length_sec * samplingrate
 rest_length_sec <- 30
@@ -50,7 +51,7 @@ rest_length_samples <- rest_length_sec * samplingrate
 
 rawdata$stim_on <- 0
 for (m in 1:norigmarkers){
-  rawdata$stim_on[(origmarkerlist[m]+stim_delay_samples):(origmarkerlist[m]+stim_delay_samples+stim_length_samples)] <- 1
+  rawdata$stim_on[wg_starts[m]:(wg_starts[m]+stim_length_samples)] <- 1
 }
 
 ## Check markers look good - there should be 23 of them, and the time should run to over 1150 seconds (23 trials * 50 seconds)
@@ -128,4 +129,6 @@ line <- readline()
 #----------------------------------------------------------
 # Save processed file in csv format
 mynewfile <- paste0(strsplit(myfile, '*.exp'), '_processed.csv')
+mymarkerfile <- paste0(strsplit(myfile,"*.exp"), '_markers.csv')
 write.csv(rawdata, mynewfile, row.names=F)
+write.csv(wg_starts, mymarkerfile, row.names=F)
