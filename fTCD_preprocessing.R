@@ -40,12 +40,17 @@ markersize <- meanmarker+4*sd(rawdata$marker)
 origmarkerlist = which(markersub>markersize)
 norigmarkers = length(origmarkerlist)
 
-stim_length_sec <- 25
+# Stimulus timings: Word Gen starts 5 seconds after marker and continues for 20 seconds (including REPORT phase)
+stim_delay_sec <- 5
+stim_delay_samples <- stim_delay_sec * samplingrate
+stim_length_sec <- 20
 stim_length_samples <- stim_length_sec * samplingrate
+rest_length_sec <- 30
+rest_length_samples <- rest_length_sec * samplingrate
 
 rawdata$stim_on <- 0
 for (m in 1:norigmarkers){
-  rawdata$stim_on[origmarkerlist[m]:(origmarkerlist[m]+stim_length_samples)] <- 1
+  rawdata$stim_on[(origmarkerlist[m]+stim_delay_samples):(origmarkerlist[m]+stim_delay_samples+stim_length_samples)] <- 1
 }
 
 ## Check markers look good - there should be 23 of them, and the time should run to over 1150 seconds (23 trials * 50 seconds)
