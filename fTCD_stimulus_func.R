@@ -1,6 +1,7 @@
 library(fmri)
 library(tidyverse)
 library(splines)
+library(boot)
 
 #--------------------------------------------------------------------------------------#
 
@@ -39,51 +40,76 @@ Lindquist_HRF <- function(t, par = NULL) {
   
 }
 
-c(1,1+which(diff(v)!=0))
+# -------------------------------------------------------------------------------------#
 
 # Functions from the fmri package, with parameters adapted for fTCD input.
 
-fTCD.bold.resp1 <- fmri.stimulus(scans = 1, onsets = c(1), durations = c(1), TR = 2,type="boxcar", scale=1)
+#Boxcar
 
-fTCD.bold.resp2 <- fmri.stimulus(scans = dim(data)[1], onsets = c(1,1+which(diff(data1$stim_on)!=0))[seq(2, length(c(1,1+which(diff(data1$stim_on)!=0))), by = 2)], durations = 500, TR = 1/25,type="boxcar",scale=1)
+fTCD.bold.resp1 <- fmri.stimulus(scans = dim(data1)[1], onsets = c(1,1+which(diff(data1$stim_on)!=0))[seq(2, length(c(1,1+which(diff(data1$stim_on)!=0))), by = 2)], durations = 500, TR = 1/25,type="boxcar",scale=1)
+
+fTCD.bold.resp2 <- fmri.stimulus(scans = dim(data1)[1], onsets = c(1,1+which(diff(data1$stim_on)!=0))[seq(2, length(c(1,1+which(diff(data1$stim_on)!=0))), by = 2)], durations = 500, TR = 1/25,type="canonical",scale=1)
 
 
-my_des<-fmri.design(fTCD.bold.resp2)
+my_des<-fmri.design(fTCD.bold.resp1)
 
 par(mfrow=c(2, 2))
 for (i in 1:4) plot(my_des[, i], type="l")
 par(mfrow=c(1, 1))
 
-glm.fit(x=my_des,y=data1$heartbeatcorrected_L)
+myfit<-glm.fit(x=my_des,y=data1$heartbeatcorrected_L[c(seq(from=1, to=length(data1[,1]), by=25)-1)[-1]],family=gaussian())
+
+myfit$coefficients
+
+class(myfit) <- c(myfit$class, c("glm", "lm"))
+
+myfit.diag<-glm.diag(myfit)
+
+glm.diag.plots(myfit, myfit.diag)
+# -------------------------------------------------------------------------------------#
+
+#canonical
+
+fTCD.bold.resp2 <- fmri.stimulus(scans = dim(data1)[1], onsets = c(1,1+which(diff(data1$stim_on)!=0))[seq(2, length(c(1,1+which(diff(data1$stim_on)!=0))), by = 2)], durations = 500, TR = 1/25,type="canonical",scale=1)
+
+
+my_des2<-fmri.design(fTCD.bold.resp2)
+
+
+myfit2<-glm.fit(x=my_des2,y=data1$heartbeatcorrected_L[c(seq(from=1, to=length(data1[,1]), by=25)-1)[-1]])
+
+myfit2$coefficients
 
 
 
-# fmri.stimulus(scans = 1, onsets = c(1), durations = c(1), TR = 2,
-#               times = FALSE, sliceorder = NULL,
-#               type = c("canonical", "gamma", "boxcar", "user"),
-#               par = NULL, scale = 10, hrf = NULL, verbose = FALSE)
+class(myfit2) <- c(myfit2$class, c("glm", "lm"))
+
+myfit.diag2<-glm.diag(myfit2)
+
+glm.diag.plots(myfit2, myfit.diag2)
 
 # -------------------------------------------------------------------------------------#
-# scans	- number of scans
-# 
-# onsets - vector of onset times (in scans)
-# 
-# durations	- vector of duration of ON stimulus in scans or seconds (if !is.null(times))
-# 
-# TR - time between scans in seconds (TR)
-# 
-# times -	onset times in seconds. If present onsets arguments is ignored.
-# 
-# sliceorder - order of slice acquisition. If provided separate expected bold responses are calculated for the slices taking slice acquisition times into account. Default: no slice timing.
-# 
-# type - One of "canonical", "gamma", "boxcar", "user"
-# 
-# par	- Possible parameters to the HRF.
-# 
-# scale	- Temporal undersampling factor
-# 
-# hrf	- If type is "user" this should be a function evaluating the hemodynamic response function
-# 
-# verbose	- Report more if TRUE
+
+#gamma
+
+fTCD.bold.resp3 <- fmri.stimulus(scans = dim(data1)[1], onsets = c(1,1+which(diff(data1$stim_on)!=0))[seq(2, length(c(1,1+which(diff(data1$stim_on)!=0))), by = 2)], durations = 500, TR = 1/25,type="gamma",scale=1)
+
+
+my_des3<-fmri.design(fTCD.bold.resp3)
+
+
+myfit3<-glm.fit(x=my_des3,y=data1$heartbeatcorrected_L[c(seq(from=1, to=length(data1[,1]), by=25)-1)[-1]])
+
+myfit3$coefficients
+
+class(myfit3) <- c(myfit3$class, c("glm", "lm"))
+
+myfit.diag3<-glm.diag(myfit3)
+
+glm.diag.plots(myfit3, myfit.diag3)
 
 # -------------------------------------------------------------------------------------#
+modelComp<-data.frame(HRF=c("Boxcar","Canonical","Gamma"),AIC=c(myfit$aic,myfit2$aic,myfit3$aic))
+modelComp
+
+
