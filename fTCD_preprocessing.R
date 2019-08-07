@@ -2,6 +2,7 @@
 # fTCD preprocessing for GLM analysis
 # 
 # Created by z.woodhead 30th July 2019 
+# edited by P.Thompson 5th August 2019 - allow files to be read differently
 #########################################################################################
 # This script takes a raw .exp datafile and preprocesses it ready for GLM analysis:
 #   - It creates a box car function showing when the task was ON or OFF

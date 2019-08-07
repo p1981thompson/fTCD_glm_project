@@ -42,6 +42,8 @@ Lindquist_HRF <- function(t, par = NULL) {
 
 # -------------------------------------------------------------------------------------#
 
+
+
 # Functions from the fmri package, with parameters adapted for fTCD input.
 
 #Boxcar
@@ -111,5 +113,18 @@ glm.diag.plots(myfit3, myfit.diag3)
 # -------------------------------------------------------------------------------------#
 modelComp<-data.frame(HRF=c("Boxcar","Canonical","Gamma"),AIC=c(myfit$aic,myfit2$aic,myfit3$aic))
 modelComp
+
+# -------------------------------------------------------------------------------------#
+# plot glm on real data.
+
+myplotdat<-data.frame(y=data1$heartbeatcorrected_L[c(seq(from=1, to=length(data1[,1]), by=25)-1)[-1]],
+                      x=data1$sec[c(seq(from=1, to=length(data1[,1]), by=25)-1)[-1]],
+                      fitted=myfit3$fitted.values)
+
+ggplot(myplotdat,aes(y=y,x=x))+geom_point()+geom_line(aes(y=fitted),color="red")+theme_bw()
+
+
+
+# -------------------------------------------------------------------------------------#
 
 

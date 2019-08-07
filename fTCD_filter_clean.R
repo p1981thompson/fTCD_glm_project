@@ -58,8 +58,6 @@ ggplot(long_ts2, aes(x = sec, y = y)) +
 
 #filter time series signal to remove some noise.
 
-
-
 long_ts3<-long_ts %>% dplyr::filter(.,signal=='filtered_L')
 long_ts3a<-long_ts %>% dplyr::filter(.,signal=='stim_on')
 
