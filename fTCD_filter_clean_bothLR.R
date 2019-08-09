@@ -246,7 +246,7 @@ fTCD_glm<-function(path,order)
 #-----------------------------------------------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------------------------------------------#
 #Set the order
-order=2
+order=3 #polynomial drift terms (2=quadratic, 3=cubic, etc...)
 my_results<-fTCD_glm(path=getwd(),order=order)
 
 my_results_diff<-data.frame(matrix(NA,nrow=length(my_results[,1]),ncol=((order+2)+1)))
