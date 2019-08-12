@@ -167,6 +167,39 @@ fTCD_glm<-function(path,order)
     
     #---------------------------------------------------------------------------------------------------------------#
     
+    myseq<-seq(1,length(rawdata[,1]),by=25)
+    rawdata2<-rawdata[myseq,]
+    
+    blockends<-cumsum(rle(rawdata2$stim_on)$lengths)
+    blockstarts<-c(1,(blockends+1)[-length(blockends)])
+    
+    rawdata2$epoch<-rawdata2$time<-rawdata2$adj_L<-rawdata2$adj_R<-rep(NA,length(rawdata2[,1]))
+    
+    for(i in 1:length(blockends))
+    {
+      rawdata2$epoch[blockstarts[i]:blockends[i]]<-i
+      
+      rawdata2$time[blockstarts[i]:blockends[i]]<-1:length(blockstarts[i]:blockends[i])
+  
+      rawdata2$adj_L[blockstarts[i]:blockends[i]]<-rawdata2$heartbeatcorrected_L[blockstarts[i]:blockends[i]]-rawdata2$heartbeatcorrected_L[blockstarts[i]]
+
+      rawdata2$adj_R[blockstarts[i]:blockends[i]]<-rawdata2$heartbeatcorrected_R[blockstarts[i]:blockends[i]]-rawdata2$heartbeatcorrected_R[blockstarts[i]]
+
+      #rawdata2$adj_L_c[blockstarts[i]:blockends[i]]<-rawdata2$heartbeatcorrected_L[blockstarts[i]:blockends[i]]-mean(rawdata2$heartbeatcorrected_L[blockstarts[i]:blockends[i]])
+    }
+    
+    rawdata3<-rawdata2 %>% filter(stim_on == 1)
+    rawdata3$epoch<-factor(rawdata3$epoch)
+  
+     pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_LEFT.pdf'))
+    ggplot(rawdata3,aes(y=adj_L,x=time,colour=epoch))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+    dev.off()
+    
+    pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_RIGHT.pdf'))
+    ggplot(rawdata3,aes(y=adj_R,x=time,colour=epoch))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+    dev.off()
+    
+    #ggplot(rawdata3,aes(y=adj_L_c,x=time,colour=epoch))+geom_line()+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
     
     
     #---------------------------------------------------------------------------------------------------------------#
@@ -233,8 +266,9 @@ fTCD_glm<-function(path,order)
                           x=c(rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]]),
                           fitted=c(switch(mychoiceL,boxcar=myfit1L$fitted.values,canonical=myfit2L$fitted.values,gamma=myfit3L$fitted.values),switch(mychoiceR,boxcar=myfit1R$fitted.values,canonical=myfit2R$fitted.values,gamma=myfit3R$fitted.values)),Signal=rep(c("Left","Right"),each=length(rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]])))
     
-    print(ggplot(myplotdat,aes(y=y,x=x))+geom_point()+geom_line(aes(y=fitted),color="blue")+theme_bw() + facet_grid(~Signal))
-    
+    pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_signals.pdf'))
+    ggplot(myplotdat,aes(y=y,x=x))+geom_point()+geom_line(aes(y=fitted),color="blue")+theme_bw() + facet_grid(~Signal)
+    dev.off()
     
     
     glm_data<-glm.data
