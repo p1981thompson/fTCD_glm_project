@@ -10,6 +10,8 @@ require(dplyr)
 require(tidyverse)
 require(fmri)
 require(boot)
+require(ggpubr)
+
 
 #see API token set up at: http://centerforopenscience.github.io/osfr/articles/auth.html
 get_data=0
@@ -191,13 +193,13 @@ fTCD_glm<-function(path,order)
     rawdata3<-rawdata2 %>% filter(stim_on == 1)
     rawdata3$epoch<-factor(rawdata3$epoch)
   
-     pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_LEFT.pdf'))
-    ggplot(rawdata3,aes(y=adj_L,x=time,colour=epoch))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
-    dev.off()
+     #pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_LEFT.pdf'))
+    g1<-ggplot(rawdata3,aes(y=adj_L,x=time,colour=epoch))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+    #dev.off()
     
-    pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_RIGHT.pdf'))
-    ggplot(rawdata3,aes(y=adj_R,x=time,colour=epoch))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
-    dev.off()
+    #pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_RIGHT.pdf'))
+    g2<-ggplot(rawdata3,aes(y=adj_R,x=time,colour=epoch))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+    #dev.off()
     
     #ggplot(rawdata3,aes(y=adj_L_c,x=time,colour=epoch))+geom_line()+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
     
@@ -266,8 +268,19 @@ fTCD_glm<-function(path,order)
                           x=c(rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]]),
                           fitted=c(switch(mychoiceL,boxcar=myfit1L$fitted.values,canonical=myfit2L$fitted.values,gamma=myfit3L$fitted.values),switch(mychoiceR,boxcar=myfit1R$fitted.values,canonical=myfit2R$fitted.values,gamma=myfit3R$fitted.values)),Signal=rep(c("Left","Right"),each=length(rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]])))
     
+    
+    g3<-ggplot(myplotdat,aes(y=y,x=x))+geom_point(colour='grey',alpha=0.5)+geom_line(aes(y=fitted),color="red")+theme_bw() + facet_grid(~Signal)
+    
+
+    
+    g4<-ggarrange(g3,                                                 # First row with scatter plot
+              ggarrange(g1, g2, ncol = 2, labels = c("B", "C")), # Second row with box and dot plots
+              nrow = 2, 
+              labels = "A"                                        # Labels of the scatter plot
+    )
+    
     pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_signals.pdf'))
-    ggplot(myplotdat,aes(y=y,x=x))+geom_point()+geom_line(aes(y=fitted),color="blue")+theme_bw() + facet_grid(~Signal)
+    print(g4)
     dev.off()
     
     
@@ -333,7 +346,7 @@ old_res<-old_res %>% rename(ID=Filename)
 
 compare_results<-merge(my_results_diff,old_res,by='ID',all.x = T)
 
-compare_results$New_LI <- ifelse(compare_results$Dparam1>0,)
+#compare_results$New_LI <- ifelse(compare_results$Dparam1>0,)
 
 
 fmri_data <- read.csv('/Volumes/PSYHOME/PSYRES/pthompson/DVMB/bruckett_reanalysis/Chapter5_fMRI_data.csv')
