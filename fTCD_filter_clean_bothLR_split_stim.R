@@ -33,7 +33,7 @@ if(get_data==1)
 #########################################################################################
 #########################################################################################
 
-fTCD_glm<-function(path,order)
+fTCD_glm3<-function(path,order)
 {
   
   
@@ -45,8 +45,8 @@ fTCD_glm<-function(path,order)
   heartratemax <- 125
   
   
-  glm.data<-data.frame(matrix(NA,nrow=length(filename1),ncol=(((order+2)*2)+3)))
-  names(glm.data)<-c('ID',paste0('Lparam',(1:(order+2))),'L_HRF',paste0('Rparam',(1:(order+2))),'R_HRF')
+  glm.data<-data.frame(matrix(NA,nrow=length(filename1),ncol=(((order+3)*2)+3)))
+  names(glm.data)<-c('ID',paste0('Lparam',(1:(order+3))),'L_HRF',paste0('Rparam',(1:(order+3))),'R_HRF')
   
   
   for(j in 1:length(filename1))
@@ -88,16 +88,26 @@ fTCD_glm<-function(path,order)
     norigmarkers = length(origmarkerlist)
     
     # Stimulus timings: Word Gen starts 5 seconds after marker and continues for 20 seconds (including REPORT phase)
-    stim_delay_sec <- 5
-    stim_delay_samples <- stim_delay_sec * samplingrate
-    stim_length_sec <- 20
-    stim_length_samples <- stim_length_sec * samplingrate
+    # Edit: stim1 models covert word generation, which starts 5 seconds after marker and continutes for 15 seconds
+    # stim2 models overt word reporting, which starts 20 seconds after marker and continues for 5 seconds
+    stim1_delay_sec <- 5
+    stim1_delay_samples <- stim1_delay_sec * samplingrate
+    stim1_length_sec <- 15
+    stim1_length_samples <- stim1_length_sec * samplingrate
+    
+    stim2_delay_sec <- 20
+    stim2_delay_samples <- stim2_delay_sec * samplingrate
+    stim2_length_sec <- 5
+    stim2_length_samples <- stim2_length_sec * samplingrate
+    
     rest_length_sec <- 30
     rest_length_samples <- rest_length_sec * samplingrate
     
-    rawdata$stim_on <- 0
+    rawdata$stim1_on <- 0
+    rawdata$stim2_on <- 0
     for (m in 1:norigmarkers){
-      rawdata$stim_on[(origmarkerlist[m]+stim_delay_samples):(origmarkerlist[m]+stim_delay_samples+stim_length_samples)] <- 1
+      rawdata$stim1_on[(origmarkerlist[m]+stim1_delay_samples):(origmarkerlist[m]+stim1_delay_samples+stim1_length_samples)] <- 1
+      rawdata$stim2_on[(origmarkerlist[m]+stim2_delay_samples):(origmarkerlist[m]+stim2_delay_samples+stim2_length_samples)] <- 1
     }
     
     #----------------------------------------------------------
@@ -169,124 +179,129 @@ fTCD_glm<-function(path,order)
     
     #---------------------------------------------------------------------------------------------------------------#
     
-    myseq<-seq(1,length(rawdata[,1]),by=25)
-    rawdata2<-rawdata[myseq,]
-    
-    blockends<-cumsum(rle(rawdata2$stim_on)$lengths)
-    blockstarts<-c(1,(blockends+1)[-length(blockends)])
-    
-    rawdata2$epoch<-rawdata2$time<-rawdata2$adj_L<-rawdata2$adj_R<-rep(NA,length(rawdata2[,1]))
-    
+     myseq<-seq(1,length(rawdata[,1]),by=25)
+     rawdata2<-rawdata[myseq,]
+     
+     blockends1<-cumsum(rle(rawdata2$stim1_on)$lengths)
+     blockstarts1<-c(1,(blockends1+1)[-length(blockends1)])
+     
+     blockends2<-cumsum(rle(rawdata2$stim2_on)$lengths)
+     blockstarts2<-c(1,(blockends2+1)[-length(blockends2)])
+     
+     rawdata2$epoch1<-rawdata2$epoch2<-rawdata2$time1<-rawdata2$time2<-rawdata2$adj_L1<-rawdata2$adj_R1<-rawdata2$adj_L2<-rawdata2$adj_R2<-rep(NA,length(rawdata2[,1]))
+
     for(i in 1:length(blockends))
     {
-      rawdata2$epoch[blockstarts[i]:blockends[i]]<-i
-      
-      rawdata2$time[blockstarts[i]:blockends[i]]<-1:length(blockstarts[i]:blockends[i])
-  
-      rawdata2$adj_L[blockstarts[i]:blockends[i]]<-rawdata2$heartbeatcorrected_L[blockstarts[i]:blockends[i]]-rawdata2$heartbeatcorrected_L[blockstarts[i]]
+      rawdata2$epoch1[blockstarts1[i]:blockends1[i]]<-i
+      rawdata2$epoch2[blockstarts2[i]:blockends2[i]]<-i
 
-      rawdata2$adj_R[blockstarts[i]:blockends[i]]<-rawdata2$heartbeatcorrected_R[blockstarts[i]:blockends[i]]-rawdata2$heartbeatcorrected_R[blockstarts[i]]
+      rawdata2$time1[blockstarts1[i]:blockends1[i]]<-1:length(blockstarts1[i]:blockends1[i])
+      rawdata2$time2[blockstarts2[i]:blockends2[i]]<-1:length(blockstarts2[i]:blockends2[i])
+
+      rawdata2$adj_L1[blockstarts1[i]:blockends1[i]]<-rawdata2$heartbeatcorrected_L[blockstarts1[i]:blockends1[i]]-rawdata2$heartbeatcorrected_L[blockstarts1[i]]
+      rawdata2$adj_L2[blockstarts2[i]:blockends2[i]]<-rawdata2$heartbeatcorrected_L[blockstarts2[i]:blockends2[i]]-rawdata2$heartbeatcorrected_L[blockstarts2[i]]
+
+      rawdata2$adj_R1[blockstarts1[i]:blockends1[i]]<-rawdata2$heartbeatcorrected_R[blockstarts1[i]:blockends1[i]]-rawdata2$heartbeatcorrected_R[blockstarts1[i]]
+      rawdata2$adj_R2[blockstarts2[i]:blockends2[i]]<-rawdata2$heartbeatcorrected_R[blockstarts2[i]:blockends2[i]]-rawdata2$heartbeatcorrected_R[blockstarts2[i]]
 
       #rawdata2$adj_L_c[blockstarts[i]:blockends[i]]<-rawdata2$heartbeatcorrected_L[blockstarts[i]:blockends[i]]-mean(rawdata2$heartbeatcorrected_L[blockstarts[i]:blockends[i]])
     }
+
+     rawdata3a<-rawdata2 %>% filter(stim1_on == 1)
+     rawdata3b<-rawdata2 %>% filter(stim2_on == 1)
+     rawdata3a$epoch1<-factor(rawdata3a$epoch1)
+     rawdata3a$epoch2<-factor(rawdata3a$epoch2)
+     rawdata3b$epoch1<-factor(rawdata3b$epoch1)
+     rawdata3b$epoch2<-factor(rawdata3b$epoch2)
+     
+    # 
+    # #pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_LEFT.pdf'))
+     g1a<-ggplot(rawdata3a,aes(y=adj_L1,x=time1,colour=epoch1))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+     
+     g1b<-ggplot(rawdata3b,aes(y=adj_L2,x=time2,colour=epoch2))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+    # #dev.off()
+    # 
+    # #pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_RIGHT.pdf'))
+     g2a<-ggplot(rawdata3a,aes(y=adj_R1,x=time1,colour=epoch1))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+     
+     g2b<-ggplot(rawdata3b,aes(y=adj_R2,x=time2,colour=epoch2))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+    # #dev.off()
     
-    rawdata3<-rawdata2 %>% filter(stim_on == 1)
-    rawdata3$epoch<-factor(rawdata3$epoch)
-  
-     #pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_LEFT.pdf'))
-    g1<-ggplot(rawdata3,aes(y=adj_L,x=time,colour=epoch))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
-    #dev.off()
     
-    #pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_RIGHT.pdf'))
-    g2<-ggplot(rawdata3,aes(y=adj_R,x=time,colour=epoch))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
-    #dev.off()
-    
-    #ggplot(rawdata3,aes(y=adj_L_c,x=time,colour=epoch))+geom_line()+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
     
     
     #---------------------------------------------------------------------------------------------------------------#
     
+
+    gamma1 = fmri.stimulus(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0))[seq(2, length(c(1,1+which(diff(rawdata$stim1_on)!=0))), by = 2)], durations = 375, TR = 1/25,type="gamma",scale=1)
     
-    boxcar=fmri.stimulus(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim_on)!=0))[seq(2, length(c(1,1+which(diff(rawdata$stim_on)!=0))), by = 2)], durations = 500, TR = 1/25,type="boxcar",scale=1)
+    gamma2 = fmri.stimulus(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim2_on)!=0))[seq(2, length(c(1,1+which(diff(rawdata$stim2_on)!=0))), by = 2)], durations = 125, TR = 1/25,type="gamma",scale=1)
     
-    canonical = fmri.stimulus(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim_on)!=0))[seq(2, length(c(1,1+which(diff(rawdata$stim_on)!=0))), by = 2)], durations = 500, TR = 1/25,type="canonical",scale=1)
+    gamma = as.matrix(cbind(gamma1,gamma2))
     
-    gamma = fmri.stimulus(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim_on)!=0))[seq(2, length(c(1,1+which(diff(rawdata$stim_on)!=0))), by = 2)], durations = 500, TR = 1/25,type="gamma",scale=1)
-    
-    
-    my_des1<-fmri.design(boxcar, order = order)
-    my_des2<-fmri.design(canonical, order = order)
-    my_des3<-fmri.design(gamma, order = order)
+    my_des<-fmri.design(gamma, order = order)
     
     #Left signal glm
-    myfit1L<-glm.fit(x=my_des1,y=rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],family=gaussian())
-    myfit2L<-glm.fit(x=my_des2,y=rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],family=gaussian())
-    myfit3L<-glm.fit(x=my_des3,y=rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],family=gaussian())
+    myfitL<-glm.fit(x=my_des,y=rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],family=gaussian())
     
-    class(myfit1L) <- c(myfit1$class, c("glm", "lm"))
-    class(myfit2L) <- c(myfit2$class, c("glm", "lm"))
-    class(myfit3L) <- c(myfit3$class, c("glm", "lm"))
-    
-    modelCompL<-data.frame(HRF=c("boxcar","canonical","gamma"),AIC=c(myfit1L$aic,myfit2L$aic,myfit3L$aic))
-    
-    mychoiceL<-as.character(modelCompL$HRF[which.min(modelCompL$AIC)])
+    class(myfitL) <- c(myfitL$class, c("glm", "lm"))
     
     #Right signal glm
-    myfit1R<-glm.fit(x=my_des1,y=rawdata$heartbeatcorrected_R[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],family=gaussian())
-    myfit2R<-glm.fit(x=my_des2,y=rawdata$heartbeatcorrected_R[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],family=gaussian())
-    myfit3R<-glm.fit(x=my_des3,y=rawdata$heartbeatcorrected_R[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],family=gaussian())
+    myfitR<-glm.fit(x=my_des,y=rawdata$heartbeatcorrected_R[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],family=gaussian())
     
-    class(myfit1R) <- c(myfit1$class, c("glm", "lm"))
-    class(myfit2R) <- c(myfit2$class, c("glm", "lm"))
-    class(myfit3R) <- c(myfit3$class, c("glm", "lm"))
+    class(myfitR) <- c(myfitR$class, c("glm", "lm"))
     
-    modelCompR<-data.frame(HRF=c("boxcar","canonical","gamma"),AIC=c(myfit1R$aic,myfit2R$aic,myfit3R$aic))
-    
-    mychoiceR<-as.character(modelCompR$HRF[which.min(modelCompR$AIC)])
     
     glm.data[j,1] <- strsplit(basename(myfile),'[.]')[[1]][1]
     
-    glm.data[j,(((order+2)*1)+2)] <- mychoiceL
-    glm.data[j,(((order+2)*2)+3)] <- mychoiceR
+    glm.data[j,(((order+3)*1)+2)] <- "gamma"
+    glm.data[j,(((order+3)*2)+3)] <- "gamma"
     
-    glm.data[j,2:(((order+2)*1)+1)] <- switch(mychoiceL,boxcar=myfit1L$coefficients,canonical=myfit2L$coefficients,gamma=myfit3L$coefficients)
-    glm.data[j,(((order+2)*1)+3):(((order+2)*2)+2)] <- switch(mychoiceR,boxcar=myfit1R$coefficients,canonical=myfit2R$coefficients,gamma=myfit3R$coefficients)
+    glm.data[j,2:(((order+3)*1)+1)] <- myfitL$coefficients
+    glm.data[j,(((order+3)*1)+3):(((order+3)*2)+2)] <- myfitR$coefficients
     
     #Left
-    myfit.diagL<-glm.diag(switch(mychoiceL,boxcar=myfit1L,canonical=myfit2L,gamma=myfit3L))
+    myfit.diagL<-glm.diag(myfitL)
     # pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_diag_plot_LEFT.pdf'))
     # glm.diag.plots(switch(mychoiceL,boxcar=myfit1L,canonical=myfit2L,gamma=myfit3L), myfit.diagL)
     # dev.off()
     
     #Right
-    myfit.diagR<-glm.diag(switch(mychoiceR,boxcar=myfit1R,canonical=myfit2R,gamma=myfit3R))
+    myfit.diagR<-glm.diag(myfitR)
     # pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_diag_plot_RIGHT.pdf'))
     # glm.diag.plots(switch(mychoiceR,boxcar=myfit1R,canonical=myfit2R,gamma=myfit3R), myfit.diagR)
     # dev.off()
     
     myplotdat<-data.frame(y=c(rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],rawdata$heartbeatcorrected_R[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]]),
                           x=c(rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]]),
-                          fitted=c(switch(mychoiceL,boxcar=myfit1L$fitted.values,canonical=myfit2L$fitted.values,gamma=myfit3L$fitted.values),switch(mychoiceR,boxcar=myfit1R$fitted.values,canonical=myfit2R$fitted.values,gamma=myfit3R$fitted.values)),Signal=rep(c("Left","Right"),each=length(rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]])))
-    
-    
-    g3<-ggplot(myplotdat,aes(y=y,x=x))+geom_point(colour='grey',alpha=0.5)+geom_line(aes(y=fitted),color="red")+theme_bw() + facet_grid(~Signal)
-    
+                          fitted=c(myfitL$fitted.values,myfitR$fitted.values),Signal=rep(c("Left","Right"),each=length(rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]])))
 
-    
-    g4<-ggarrange(g3,                                                 # First row with scatter plot
-              ggarrange(g1, g2, ncol = 2, labels = c("B", "C")), # Second row with box and dot plots
-              nrow = 2, 
-              labels = "A"                                        # Labels of the scatter plot
-    )
-    
+
+    g3<-ggplot(myplotdat,aes(y=y,x=x))+geom_point(colour='grey',alpha=0.5)+geom_line(aes(y=fitted),color="red")+theme_bw() + facet_grid(~Signal)
+
+    # 
+    # 
+     g4<-ggarrange(g3,                                                 # First row with scatter plot
+                ggarrange(g1a, g1b, g2a, g2b, ncol = 2,nrow=2, labels = c("B", "C","D", "E")), # Second row with box and dot plots
+                   nrow = 2,
+                   labels = "A"                                        # Labels of the scatter plot
+     )
+
+    #g4<-ggarrange(g1a, g1b, g2a, g2b, ncol = 2,nrow=2, labels = c("B", "C","D", "E"))
+
     g4<-annotate_figure(g4, top = text_grob(strsplit(myfile,'[.]')[[1]][1], face = "bold", size = 14))
-    
+
     #pdf(file = paste0(strsplit(myfile,'[.]')[[1]][1],'_HRF_plot_signals.pdf'))
-    
+
     #pdf(file = 'HRF_signals_plots.pdf', onefile = TRUE)
+    #print(g1a)
+    #print(g2a)
+    #print(g1b)
+    #print(g2b)
+    #print(g3)
     print(g4)
     #dev.off()
-    
+
     
     glm_data<-glm.data
   }
@@ -299,23 +314,23 @@ fTCD_glm<-function(path,order)
 #Set the order
 order=3 #polynomial drift terms (2=quadratic, 3=cubic, etc...)
 pdf(file = 'HRF_signals_plots.pdf', onefile = TRUE)
-my_results<-fTCD_glm(path=getwd(),order=order)
+my_results<-fTCD_glm3(path=getwd(),order=order)
 dev.off()
-my_results_diff<-data.frame(matrix(NA,nrow=length(my_results[,1]),ncol=((order+2)+1)))
-names(my_results_diff)<-c('ID',paste0('Dparam',(1:(order+2))))
+my_results_diff<-data.frame(matrix(NA,nrow=length(my_results[,1]),ncol=((order+3)+1)))
+names(my_results_diff)<-c('ID',paste0('Dparam',(1:(order+3))))
 my_results_diff$ID<-my_results$ID
-for(i in 1:(order+2))
+for(i in 1:(order+3))
 {
-  my_results_diff[,(i+1)] <- my_results[,(i+1)]-my_results[,((order+2)+2+i)]
+  my_results_diff[,(i+1)] <- my_results[,(i+1)]-my_results[,((order+3)+2+i)]
 }
 #-----------------------------------------------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------------------------------------------#
 
 
-mylong_results_L<-gather(my_results[,1:(order+2+2)],key='param',value='beta',-c(ID,L_HRF))
-mylong_results_R<-gather(my_results[,c(1,(((order+2)*1)+3):(((order+2)*2)+3))],key='param',value='beta',-c(ID,R_HRF))
+mylong_results_L<-gather(my_results[,1:(order+3+2)],key='param',value='beta',-c(ID,L_HRF))
+mylong_results_R<-gather(my_results[,c(1,(((order+3)*1)+3):(((order+3)*2)+3))],key='param',value='beta',-c(ID,R_HRF))
 
-mylong_results_D<-gather(my_results_diff[,1:(order+2+1)],key='param',value='beta',-ID)
+mylong_results_D<-gather(my_results_diff[,1:(order+3+1)],key='param',value='beta',-ID)
 
 names(mylong_results_L)[2]<-"HRF"
 names(mylong_results_R)[2]<-"HRF"
