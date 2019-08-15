@@ -48,6 +48,9 @@ fTCD_glm3<-function(path,order)
   glm.data<-data.frame(matrix(NA,nrow=length(filename1),ncol=(((order+3)*2)+3)))
   names(glm.data)<-c('ID',paste0('Lparam',(1:(order+3))),'L_HRF',paste0('Rparam',(1:(order+3))),'R_HRF')
   
+  ts_summary_data<-as.data.frame(matrix(NA,nrow=length(filename1),ncol=5))
+  names(ts_summary_data)<-c("ID","peakL","bmeanL","peakR","bmeanR")
+  
   
   for(j in 1:length(filename1))
   {
@@ -175,7 +178,8 @@ fTCD_glm3<-function(path,order)
     mynewfile <- paste0(strsplit(myfile, '*.exp'), '_processed.csv')
     write.csv(rawdata, mynewfile, row.names=F)
     
-    
+    #----------------------------------------------------------
+    ts_summary_data[j,] <- c(strsplit(myfile, '*.exp'), max(rawdata2$heartbeatcorrected_L), mean(rawdata2$heartbeatcorrected_L), max(rawdata2$heartbeatcorrected_R), mean(rawdata2$heartbeatcorrected_R))
     
     #---------------------------------------------------------------------------------------------------------------#
     
@@ -305,7 +309,7 @@ fTCD_glm3<-function(path,order)
     
     glm_data<-glm.data
   }
-  
+  write.csv(ts_summary_data,"ts_summary_data.csv")
   return(glm_data)    
 }
 
