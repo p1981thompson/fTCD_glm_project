@@ -26,7 +26,8 @@ for (i in 1:length(file_list)){
 
 }
 
-
+write.csv(leftdata, 'fMRI_leftdata.csv')
+write.csv(rightdata, 'fMRI_rightdata.csv')
 
 
 
