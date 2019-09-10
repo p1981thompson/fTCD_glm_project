@@ -50,8 +50,8 @@ fTCD_glm4<-function(path,order)
   heartratemax <- 125
   
   
-  glm.data<-data.frame(matrix(NA,nrow=length(filename1),ncol=(((order+3))+2)))
-  names(glm.data)<-c('ID',paste0('param',(1:(order+3))),'HRF')
+  glm.data<-data.frame(matrix(NA,nrow=length(filename1),ncol=(((order+4))+2)))
+  names(glm.data)<-c('ID',paste0('param',(1:(order+4))),'HRF')
   
   ts_summary_data<-as.data.frame(matrix(NA,nrow=length(filename1),ncol=5))
   names(ts_summary_data)<-c("ID","peakL","bmeanL","peakR","bmeanR")
@@ -314,19 +314,20 @@ fTCD_glm4<-function(path,order)
     
    
     
-    mydata<-data.frame(y=c(rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],rawdata$heartbeatcorrected_R[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]]),stim1=my_des[,1],t=my_des[,3],signal=as.factor(my_des[,6]))
+    mydata<-data.frame(y=c(rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],rawdata$heartbeatcorrected_R[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]]),stim1=my_des[,1],t=my_des[,3],signal=as.factor(my_des[,6]),interaction=my_des[,1]*my_des[,6])
     
     #contrasts(mydata$signal) = contr.sum(2)
     
-    myfit <- glm(y~stim1+t+I(t^2)+I(t^3)+signal,data=mydata, contrast=c(0,1,0,0,0,0))
-   
+    myfit <- glm(y~stim1+t+I(t^2)+I(t^3)+signal+interaction,data=mydata,contrasts=c(0,1,0,0,0,0,0))
+   #print(summary(myfit))
+   #print(myfit$coefficients)
     #Left signal glm
     # myfit<-glm.fit(x=my_des,y=c(rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],rawdata$heartbeatcorrected_R[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]]),family=gaussian())
     # ?glm.fit
     # class(myfit) <- c(myfit$class, c("glm", "lm"))
     
-    names(myfit$coefficients)<-c("stim1","intercept","t","t_sqr","t_cub","signal")
-    
+    names(myfit$coefficients)<-c("intercept","stim1","t","t_sqr","t_cub","signal","interaction")
+    #print(myfit$coefficients[2])
     # lme_data<-data.frame(ID=c(rawdata$),
     #                      y=c(rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],rawdata$heartbeatcorrected_R[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]]),
     #                      stim1=c(gamma1,gamma1),
@@ -339,9 +340,9 @@ fTCD_glm4<-function(path,order)
     
     glm.data[j,1] <- strsplit(basename(myfile),'[.]')[[1]][1]
     
-    glm.data[j,(((order+3)*1)+2)] <- "gamma"
+    glm.data[j,(((order+4)*1)+2)] <- "gamma"
     
-    glm.data[j,2:(((order+3)*1)+1)] <- myfit$coefficients
+    glm.data[j,2:(((order+4)*1)+1)] <- myfit$coefficients
     
     
     pframe<-with(rawdata,expand.grid(t=seq(min(sec),max(sec),length=length(rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]])),signal=c(0,1)))
@@ -394,7 +395,7 @@ order=3 #polynomial drift terms (2=quadratic, 3=cubic, etc...)
 pdf(file = 'HRF_signals_plots_PPTT.pdf', onefile = TRUE)
 my_results<-fTCD_glm4(path=paste0(getwd(),"/Chpt4_fTCD_PPTT_rawdata"),order=order)
 dev.off()
-≈#stop()
+#stop()
 #-----------------------------------------------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------------------------------------------#
 
@@ -434,6 +435,6 @@ fmri_data$ID<-substring(fmri_data$ID,1,6)
 
 compare_results2<-merge(compare_results,fmri_data,by='ID')
 
-psych::pairs.panels(compare_results2[,c('fMRI_diff_pptt_frontal','fMRI_diff_pptt_temporal','fMRI_diff_pptt_MCA','LI','param1','param2','param3','param4','param5','param6')])
+psych::pairs.panels(compare_results2[,c('fMRI_diff_pptt_frontal','fMRI_diff_pptt_temporal','fMRI_diff_pptt_MCA','LI','param1','param2','param3','param4','param5','param6','param7')])
 
 
