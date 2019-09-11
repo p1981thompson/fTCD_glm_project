@@ -49,8 +49,8 @@ fTCD_glm4<-function(path,order)
   glm.data<-data.frame(matrix(NA,nrow=length(filename1),ncol=(((order+5))+2)))
   names(glm.data)<-c('ID',paste0('param',(1:(order+5))),'HRF')
   
-  ts_summary_data<-as.data.frame(matrix(NA,nrow=length(filename1),ncol=5))
-  names(ts_summary_data)<-c("ID","peakL","bmeanL","peakR","bmeanR")
+  #ts_summary_data<-as.data.frame(matrix(NA,nrow=length(filename1),ncol=5))
+  #names(ts_summary_data)<-c("ID","peakL","bmeanL","peakR","bmeanR")
   
   
   for(j in 1:length(filename1))
@@ -180,7 +180,7 @@ fTCD_glm4<-function(path,order)
     write.csv(rawdata, mynewfile, row.names=F)
     
     #----------------------------------------------------------
-    ts_summary_data[j,] <- c(strsplit(myfile, '*.exp'), max(rawdata2$heartbeatcorrected_L), mean(rawdata2$heartbeatcorrected_L), max(rawdata2$heartbeatcorrected_R), mean(rawdata2$heartbeatcorrected_R))
+    #ts_summary_data[j,] <- c(strsplit(myfile, '*.exp'), max(rawdata2$heartbeatcorrected_L), mean(rawdata2$heartbeatcorrected_L), max(rawdata2$heartbeatcorrected_R), mean(rawdata2$heartbeatcorrected_R))
     
     #---------------------------------------------------------------------------------------------------------------#
     
@@ -195,7 +195,7 @@ fTCD_glm4<-function(path,order)
     
     rawdata2$epoch1<-rawdata2$epoch2<-rawdata2$time1<-rawdata2$time2<-rawdata2$adj_L1<-rawdata2$adj_R1<-rawdata2$adj_L2<-rawdata2$adj_R2<-rep(NA,length(rawdata2[,1]))
     
-    for(i in 1:length(blockends))
+    for(i in 1:length(blockends1))
     {
       rawdata2$epoch1[blockstarts1[i]:blockends1[i]]<-i
       rawdata2$epoch2[blockstarts2[i]:blockends2[i]]<-i
@@ -331,9 +331,9 @@ fTCD_glm4<-function(path,order)
 
     glm.data[j,1] <- strsplit(basename(myfile),'[.]')[[1]][1]
     
-    glm.data[j,(((order+4)*1)+2)] <- "gamma"
+    glm.data[j,(((order+5)*1)+2)] <- "gamma"
     
-    glm.data[j,2:(((order+4)*1)+1)] <- myfit$coefficients
+    glm.data[j,2:(((order+5)*1)+1)] <- myfit$coefficients
     
     
     pframe<-with(rawdata,expand.grid(t=seq(min(sec),max(sec),length=length(rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]])),signal=c(0,1)))
@@ -375,7 +375,7 @@ fTCD_glm4<-function(path,order)
     
     glm_data<-glm.data
   }
-  write.csv(ts_summary_data,"ts_summary_data.csv")
+  #write.csv(ts_summary_data,"ts_summary_data.csv")
   return(glm_data)    
 }
 
