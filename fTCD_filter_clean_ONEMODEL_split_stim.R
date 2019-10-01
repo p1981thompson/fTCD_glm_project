@@ -1,3 +1,9 @@
+#######################################
+# fTCD preprocessing for GLM analysis
+# 
+# Created by p.thompson 12th July 2019 
+#######################################
+
 
 # install.packages("remotes")
 #remotes::install_github("centerforopenscience/osfr")
