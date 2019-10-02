@@ -94,27 +94,47 @@ fTCD_glm4<-function(path,order)
     origmarkerlist = which(markersub>markersize)
     norigmarkers = length(origmarkerlist)
     
-    # Stimulus timings: Word Gen starts 5 seconds after marker and continues for 20 seconds (including REPORT phase)
-    # Edit: stim1 models covert word generation, which starts 5 seconds after marker and continutes for 15 seconds
-    # stim2 models overt word reporting, which starts 20 seconds after marker and continues for 5 seconds
+    # Stimulus timings: PPTT starts 5 seconds after marker and continues for 20 seconds 
+    # This includes 8 individual events, each 2.5 seconds long
+
     stim1_delay_sec <- 5
     stim1_delay_samples <- stim1_delay_sec * samplingrate
-    stim1_length_sec <- 15
+    stim1_length_sec <- 20
     stim1_length_samples <- stim1_length_sec * samplingrate
     
-    stim2_delay_sec <- 20
-    stim2_delay_samples <- stim2_delay_sec * samplingrate
-    stim2_length_sec <- 5
-    stim2_length_samples <- stim2_length_sec * samplingrate
+    # OPTION! If we want a more complicated model we can specify every event (i.e. all 8 stimuli within each block)
+    
+    # stim1_delay_sec <- 5
+    # stim1_delay_samples <- stim1_delay_sec * samplingrate
+    # stim1_event_length_sec <- .1    # to model all 8 events, we will specify the onset of each event only, with a 100ms boxcar
+    # stim1_event_length_samples <- stim1_event_length_sec * samplingrate
+    # stim1_event_interval_sec <- 2.5
+    # stim1_n_events <- 8
+    
+    # stim2 not required for pptt
+    
+    # stim2_delay_sec <- 20
+    # stim2_delay_samples <- stim2_delay_sec * samplingrate
+    # stim2_length_sec <- 5
+    # stim2_length_samples <- stim2_length_sec * samplingrate
     
     rest_length_sec <- 30
     rest_length_samples <- rest_length_sec * samplingrate
     
     rawdata$stim1_on <- 0
-    rawdata$stim2_on <- 0
+    # rawdata$stim2_on <- 0
     for (m in 1:norigmarkers){
       rawdata$stim1_on[(origmarkerlist[m]+stim1_delay_samples):(origmarkerlist[m]+stim1_delay_samples+stim1_length_samples)] <- 1
-      rawdata$stim2_on[(origmarkerlist[m]+stim2_delay_samples):(origmarkerlist[m]+stim2_delay_samples+stim2_length_samples)] <- 1
+      
+      # OPTION: here's the more complicated model:
+      # 
+      # for (i in 1:stim1_n_events){
+      #   start_ind <- origmarkerlist[m] + stim1_delay_samples + stim1_event_interval_sec*(i-1)*samplingrate
+      #   rawdata$stim1_on[start_ind : (start_ind + stim1_event_length_samples)] <- 1
+      #   }
+
+      # stim2 is not in use for pptt
+      # rawdata$stim2_on[(origmarkerlist[m]+stim2_delay_samples):(origmarkerlist[m]+stim2_delay_samples+stim2_length_samples)] <- 1
     }
     
     #----------------------------------------------------------
@@ -191,43 +211,43 @@ fTCD_glm4<-function(path,order)
     blockends1<-cumsum(rle(rawdata2$stim1_on)$lengths)
     blockstarts1<-c(1,(blockends1+1)[-length(blockends1)])
     
-    blockends2<-cumsum(rle(rawdata2$stim2_on)$lengths)
-    blockstarts2<-c(1,(blockends2+1)[-length(blockends2)])
+    # blockends2<-cumsum(rle(rawdata2$stim2_on)$lengths)
+    # blockstarts2<-c(1,(blockends2+1)[-length(blockends2)])
     
     rawdata2$epoch1<-rawdata2$epoch2<-rawdata2$time1<-rawdata2$time2<-rawdata2$adj_L1<-rawdata2$adj_R1<-rawdata2$adj_L2<-rawdata2$adj_R2<-rep(NA,length(rawdata2[,1]))
     
     for(i in 1:length(blockends1))
     {
       rawdata2$epoch1[blockstarts1[i]:blockends1[i]]<-i
-      rawdata2$epoch2[blockstarts2[i]:blockends2[i]]<-i
+      # rawdata2$epoch2[blockstarts2[i]:blockends2[i]]<-i
       
       rawdata2$time1[blockstarts1[i]:blockends1[i]]<-1:length(blockstarts1[i]:blockends1[i])
-      rawdata2$time2[blockstarts2[i]:blockends2[i]]<-1:length(blockstarts2[i]:blockends2[i])
+      # rawdata2$time2[blockstarts2[i]:blockends2[i]]<-1:length(blockstarts2[i]:blockends2[i])
       
       rawdata2$adj_L1[blockstarts1[i]:blockends1[i]]<-rawdata2$heartbeatcorrected_L[blockstarts1[i]:blockends1[i]]-rawdata2$heartbeatcorrected_L[blockstarts1[i]]
-      rawdata2$adj_L2[blockstarts2[i]:blockends2[i]]<-rawdata2$heartbeatcorrected_L[blockstarts2[i]:blockends2[i]]-rawdata2$heartbeatcorrected_L[blockstarts2[i]]
+      # rawdata2$adj_L2[blockstarts2[i]:blockends2[i]]<-rawdata2$heartbeatcorrected_L[blockstarts2[i]:blockends2[i]]-rawdata2$heartbeatcorrected_L[blockstarts2[i]]
       
       rawdata2$adj_R1[blockstarts1[i]:blockends1[i]]<-rawdata2$heartbeatcorrected_R[blockstarts1[i]:blockends1[i]]-rawdata2$heartbeatcorrected_R[blockstarts1[i]]
-      rawdata2$adj_R2[blockstarts2[i]:blockends2[i]]<-rawdata2$heartbeatcorrected_R[blockstarts2[i]:blockends2[i]]-rawdata2$heartbeatcorrected_R[blockstarts2[i]]
+      # rawdata2$adj_R2[blockstarts2[i]:blockends2[i]]<-rawdata2$heartbeatcorrected_R[blockstarts2[i]:blockends2[i]]-rawdata2$heartbeatcorrected_R[blockstarts2[i]]
       
     }
     
     rawdata3a<-rawdata2 %>% filter(stim1_on == 1)
-    rawdata3b<-rawdata2 %>% filter(stim2_on == 1)
+    # rawdata3b<-rawdata2 %>% filter(stim2_on == 1)
     rawdata3a$epoch1<-factor(rawdata3a$epoch1)
     rawdata3a$epoch2<-factor(rawdata3a$epoch2)
-    rawdata3b$epoch1<-factor(rawdata3b$epoch1)
-    rawdata3b$epoch2<-factor(rawdata3b$epoch2)
+    # rawdata3b$epoch1<-factor(rawdata3b$epoch1)
+    # rawdata3b$epoch2<-factor(rawdata3b$epoch2)
     
     #---------------------------------------------------------------------------------------------------------------#
   
     g1a<-ggplot(rawdata3a,aes(y=adj_L1,x=time1,colour=epoch1))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
     
-    g1b<-ggplot(rawdata3b,aes(y=adj_L2,x=time2,colour=epoch2))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+    # g1b<-ggplot(rawdata3b,aes(y=adj_L2,x=time2,colour=epoch2))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
 
     g2a<-ggplot(rawdata3a,aes(y=adj_R1,x=time1,colour=epoch1))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
     
-    g2b<-ggplot(rawdata3b,aes(y=adj_R2,x=time2,colour=epoch2))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+    # g2b<-ggplot(rawdata3b,aes(y=adj_R2,x=time2,colour=epoch2))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
   
     #---------------------------------------------------------------------------------------------------------------#
     
