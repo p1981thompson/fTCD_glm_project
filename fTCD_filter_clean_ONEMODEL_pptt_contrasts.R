@@ -124,14 +124,14 @@ fTCD_glm4<-function(path,order)
     rawdata$stim1_on <- 0
     # rawdata$stim2_on <- 0
     for (m in 1:norigmarkers){
-      rawdata$stim1_on[(origmarkerlist[m]+stim1_delay_samples):(origmarkerlist[m]+stim1_delay_samples+stim1_length_samples)] <- 1
+      #rawdata$stim1_on[(origmarkerlist[m]+stim1_delay_samples):(origmarkerlist[m]+stim1_delay_samples+stim1_length_samples)] <- 1
       
       # OPTION: here's the more complicated model:
       # 
-      # for (i in 1:stim1_n_events){
-      #   start_ind <- origmarkerlist[m] + stim1_delay_samples + stim1_event_interval_sec*(i-1)*samplingrate
-      #   rawdata$stim1_on[start_ind : (start_ind + stim1_event_length_samples)] <- 1
-      #   }
+      for (i in 1:stim1_n_events){
+         start_ind <- origmarkerlist[m] + stim1_delay_samples + stim1_event_interval_sec*(i-1)*samplingrate
+         rawdata$stim1_on[start_ind : (start_ind + stim1_event_length_samples)] <- 1
+         }
 
       # stim2 is not in use for pptt
       # rawdata$stim2_on[(origmarkerlist[m]+stim2_delay_samples):(origmarkerlist[m]+stim2_delay_samples+stim2_length_samples)] <- 1
@@ -204,8 +204,10 @@ fTCD_glm4<-function(path,order)
 
     #---------------------------------------------------------------------------------------------------------------#
     
-    myseq<-seq(1,length(rawdata[,1]),by=25)
-    rawdata2<-rawdata[myseq,]
+    # rawdata has been downsampled to 25 Hz.
+    # rawdata2 is downsampled again...  
+   # myseq<-seq(1,length(rawdata[,1]),by=25)
+    rawdata2<-rawdata#[myseq,]
     
     
     blockends1<-cumsum(rle(rawdata2$stim1_on)$lengths)
