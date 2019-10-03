@@ -1,21 +1,17 @@
-#######################################
-# fTCD preprocessing for GLM analysis
-# 
-# Created by p.thompson 12th July 2019 
-#######################################
-
 
 # install.packages("remotes")
 #remotes::install_github("centerforopenscience/osfr")
 
+
 ## Packages
 library(osfr)
+library(lme4)
 library(utils)
-library(dplyr)
-library(tidyverse)
-library(fmri)
-library(boot)
-library(ggpubr)
+require(dplyr)
+require(tidyverse)
+require(fmri)
+require(boot)
+require(ggpubr)
 library(psych)
 
 #---------------------------------------------------------------------------------------------------------------#
@@ -35,12 +31,17 @@ if(get_data==1)
   lb_project <- osf_retrieve_node("hfn2j")
   
   osf_retrieve_file("https://osf.io/5kq42/") %>%
-    osf_download() %>% unzip('Chpt4_fTCD_WordGen_rawdata.zip')
+    osf_download() %>% unzip('Chpt4_fTCD_PPTT_rawdata.zip')
 }
 #---------------------------------------------------------------------------------------------------------------#
 
+#unzip('Chpt4_fTCD_PPTT_rawdata.zip')
+
 fTCD_glm4<-function(path,order)
 {
+  
+  
+  #---------------------------------------------------------------------------------------------------------------#
   
   filename1<-list.files(path,pattern = '.exp')
   ## Set parameters
@@ -48,18 +49,19 @@ fTCD_glm4<-function(path,order)
   heartratemax <- 125
   
   
-  glm.data<-data.frame(matrix(NA,nrow=length(filename1),ncol=(((order+5))+2)))
-  names(glm.data)<-c('ID',paste0('param',(1:(order+5))),'HRF')
+  glm.data<-data.frame(matrix(NA,nrow=length(filename1),ncol=(((order+4))+2)))
+  names(glm.data)<-c('ID',paste0('param',(1:(order+4))),'HRF')
   
   
   for(j in 1:length(filename1))
   {
     print(filename1[j])
-    #######################################
-    # fTCD preprocessing for GLM analysis
-    # 
-    # Created by z.woodhead 30th July 2019 
-    #######################################
+    
+    #########################################
+    # fTCD preprocessing for GLM analysis   #
+    #                                       #
+    # Created by z.woodhead 30th July 2019  #
+    #########################################
     
     # This script takes a raw .exp datafile and preprocesses it ready for GLM analysis:
     #   - It creates a box car function showing when the task was ON or OFF
@@ -70,7 +72,8 @@ fTCD_glm4<-function(path,order)
     ## Read in raw data
     
     myfile <- filename1[j]
-    mydata<-read.table(myfile, skip = 6,  header =FALSE, sep ='\t')
+    
+    mydata<-read.table(paste0(path,"/",myfile), skip = 6,  header =FALSE, sep ='\t')
     
     wantcols = c(2,3,4,7) #sec, L, R,marker #select columns of interest to put in shortdat
     shortdat = data.frame(mydata[,wantcols])
@@ -91,27 +94,47 @@ fTCD_glm4<-function(path,order)
     origmarkerlist = which(markersub>markersize)
     norigmarkers = length(origmarkerlist)
     
-    # Stimulus timings: Word Gen starts 5 seconds after marker and continues for 20 seconds (including REPORT phase)
-    # Edit: stim1 models covert word generation, which starts 5 seconds after marker and continutes for 15 seconds
-    # stim2 models overt word reporting, which starts 20 seconds after marker and continues for 5 seconds
+    # Stimulus timings: PPTT starts 5 seconds after marker and continues for 20 seconds 
+    # This includes 8 individual events, each 2.5 seconds long
+    
     stim1_delay_sec <- 5
     stim1_delay_samples <- stim1_delay_sec * samplingrate
-    stim1_length_sec <- 15
+    stim1_length_sec <- 20
     stim1_length_samples <- stim1_length_sec * samplingrate
+    # 
+    # OPTION! If we want a more complicated model we can specify every event (i.e. all 8 stimuli within each block)
     
-    stim2_delay_sec <- 20
-    stim2_delay_samples <- stim2_delay_sec * samplingrate
-    stim2_length_sec <- 5
-    stim2_length_samples <- stim2_length_sec * samplingrate
+    # stim1_delay_sec <- 5
+    # stim1_delay_samples <- stim1_delay_sec * samplingrate
+    # stim1_event_length_sec <- .1    # to model all 8 events, we will specify the onset of each event only, with a 100ms boxcar
+    # stim1_event_length_samples <- stim1_event_length_sec * samplingrate
+    # stim1_event_interval_sec <- 2.5
+    # stim1_n_events <- 8
+    
+    # stim2 not required for pptt
+    
+    # stim2_delay_sec <- 20
+    # stim2_delay_samples <- stim2_delay_sec * samplingrate
+    # stim2_length_sec <- 5
+    # stim2_length_samples <- stim2_length_sec * samplingrate
     
     rest_length_sec <- 30
     rest_length_samples <- rest_length_sec * samplingrate
     
     rawdata$stim1_on <- 0
-    rawdata$stim2_on <- 0
+    # rawdata$stim2_on <- 0
     for (m in 1:norigmarkers){
       rawdata$stim1_on[(origmarkerlist[m]+stim1_delay_samples):(origmarkerlist[m]+stim1_delay_samples+stim1_length_samples)] <- 1
-      rawdata$stim2_on[(origmarkerlist[m]+stim2_delay_samples):(origmarkerlist[m]+stim2_delay_samples+stim2_length_samples)] <- 1
+      
+      # OPTION: here's the more complicated model:
+      # 
+      # for (i in 1:stim1_n_events){
+      #   start_ind <- origmarkerlist[m] + stim1_delay_samples + stim1_event_interval_sec*(i-1)*samplingrate
+      #   rawdata$stim1_on[start_ind : (start_ind + stim1_event_length_samples)] <- 1
+      # }
+      
+      # stim2 is not in use for pptt
+      # rawdata$stim2_on[(origmarkerlist[m]+stim2_delay_samples):(origmarkerlist[m]+stim2_delay_samples+stim2_length_samples)] <- 1
     }
     
     #----------------------------------------------------------
@@ -122,9 +145,9 @@ fTCD_glm4<-function(path,order)
     rawdata$normal_L=rawdata$L/meanL * 100 #last dim of myepoched is 2 for the normalised data
     rawdata$normal_R=rawdata$R/meanR * 100
     
-    
     #----------------------------------------------------------
     # Heartbeat integration
+    
     peaklist=numeric(0)
     pdiff=numeric(0)
     badp=numeric(0)
@@ -140,10 +163,9 @@ fTCD_glm4<-function(path,order)
       & (rawdata$L[i] > rawdata$L[i+1])
       & (rawdata$L[i] > rawdata$L[i+2])
       & (rawdata$L[i] > rawdata$L[i+3])
-      & (rawdata$L[i]> rawdata$L[i+4])
-      & (rawdata$L[i]> rawdata$L[i+5]))
-    {peaklist=c(peaklist,i)
-    }
+      & (rawdata$L[i] > rawdata$L[i+4])
+      & (rawdata$L[i] > rawdata$L[i+5]))
+    {peaklist=c(peaklist,i)}
     }
     
     # Check that the heartbeats are spaced by far enough!
@@ -176,7 +198,7 @@ fTCD_glm4<-function(path,order)
     
     #---------------------------------------------------------------------------------------------------------------#
     # Save processed file in csv format
-    mynewfile <- paste0(strsplit(myfile, '*.exp'), '_processed.csv')
+    mynewfile <- paste0(getwd(),"/Chpt4_fTCD_PPTT_rawdata/",strsplit(myfile, '*.exp'), '_processed.csv')
     write.csv(rawdata, mynewfile, row.names=F)
     
     #---------------------------------------------------------------------------------------------------------------#
@@ -184,49 +206,51 @@ fTCD_glm4<-function(path,order)
     #myseq<-seq(1,length(rawdata[,1]),by=25)
     rawdata2<-rawdata#[myseq,]
     
+    
     blockends1<-cumsum(rle(rawdata2$stim1_on)$lengths)
     blockstarts1<-c(1,(blockends1+1)[-length(blockends1)])
     
-    blockends2<-cumsum(rle(rawdata2$stim2_on)$lengths)
-    blockstarts2<-c(1,(blockends2+1)[-length(blockends2)])
+    # blockends2<-cumsum(rle(rawdata2$stim2_on)$lengths)
+    # blockstarts2<-c(1,(blockends2+1)[-length(blockends2)])
     
     rawdata2$epoch1<-rawdata2$epoch2<-rawdata2$time1<-rawdata2$time2<-rawdata2$adj_L1<-rawdata2$adj_R1<-rawdata2$adj_L2<-rawdata2$adj_R2<-rep(NA,length(rawdata2[,1]))
     
     for(i in 1:length(blockends1))
     {
       rawdata2$epoch1[blockstarts1[i]:blockends1[i]]<-i
-      rawdata2$epoch2[blockstarts2[i]:blockends2[i]]<-i
+      # rawdata2$epoch2[blockstarts2[i]:blockends2[i]]<-i
       
       rawdata2$time1[blockstarts1[i]:blockends1[i]]<-1:length(blockstarts1[i]:blockends1[i])
-      rawdata2$time2[blockstarts2[i]:blockends2[i]]<-1:length(blockstarts2[i]:blockends2[i])
+      # rawdata2$time2[blockstarts2[i]:blockends2[i]]<-1:length(blockstarts2[i]:blockends2[i])
       
       rawdata2$adj_L1[blockstarts1[i]:blockends1[i]]<-rawdata2$heartbeatcorrected_L[blockstarts1[i]:blockends1[i]]-rawdata2$heartbeatcorrected_L[blockstarts1[i]]
-      rawdata2$adj_L2[blockstarts2[i]:blockends2[i]]<-rawdata2$heartbeatcorrected_L[blockstarts2[i]:blockends2[i]]-rawdata2$heartbeatcorrected_L[blockstarts2[i]]
+      # rawdata2$adj_L2[blockstarts2[i]:blockends2[i]]<-rawdata2$heartbeatcorrected_L[blockstarts2[i]:blockends2[i]]-rawdata2$heartbeatcorrected_L[blockstarts2[i]]
       
       rawdata2$adj_R1[blockstarts1[i]:blockends1[i]]<-rawdata2$heartbeatcorrected_R[blockstarts1[i]:blockends1[i]]-rawdata2$heartbeatcorrected_R[blockstarts1[i]]
-      rawdata2$adj_R2[blockstarts2[i]:blockends2[i]]<-rawdata2$heartbeatcorrected_R[blockstarts2[i]:blockends2[i]]-rawdata2$heartbeatcorrected_R[blockstarts2[i]]
+      # rawdata2$adj_R2[blockstarts2[i]:blockends2[i]]<-rawdata2$heartbeatcorrected_R[blockstarts2[i]:blockends2[i]]-rawdata2$heartbeatcorrected_R[blockstarts2[i]]
       
     }
     
     rawdata3a<-rawdata2 %>% filter(stim1_on == 1)
-    rawdata3b<-rawdata2 %>% filter(stim2_on == 1)
+    # rawdata3b<-rawdata2 %>% filter(stim2_on == 1)
     rawdata3a$epoch1<-factor(rawdata3a$epoch1)
     rawdata3a$epoch2<-factor(rawdata3a$epoch2)
-    rawdata3b$epoch1<-factor(rawdata3b$epoch1)
-    rawdata3b$epoch2<-factor(rawdata3b$epoch2)
+    # rawdata3b$epoch1<-factor(rawdata3b$epoch1)
+    # rawdata3b$epoch2<-factor(rawdata3b$epoch2)
     
-    # 
-   
+    #---------------------------------------------------------------------------------------------------------------#
+    
     g1a<-ggplot(rawdata3a,aes(y=adj_L1,x=time1,colour=epoch1))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
     
-    g1b<-ggplot(rawdata3b,aes(y=adj_L2,x=time2,colour=epoch2))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+    # g1b<-ggplot(rawdata3b,aes(y=adj_L2,x=time2,colour=epoch2))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
     
     g2a<-ggplot(rawdata3a,aes(y=adj_R1,x=time1,colour=epoch1))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
     
-    g2b<-ggplot(rawdata3b,aes(y=adj_R2,x=time2,colour=epoch2))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
- 
+    # g2b<-ggplot(rawdata3b,aes(y=adj_R2,x=time2,colour=epoch2))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+    
     #---------------------------------------------------------------------------------------------------------------#
-    fmri.stimulus.PT2<- function(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0)), durations = 375, TR = 1/25,scale=1)
+    
+    fmri.stimulus.PT2<- function(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0))[seq(2, length(c(1,1+which(diff(rawdata$stim1_on)!=0))), by = 2)], durations = stim1_event_length_samples, TR = 1/25,scale=1)
     {
       
       onsets <- onsets * TR
@@ -250,151 +274,118 @@ fTCD_glm4<-function(path,order)
       
       par <- floor((durations[1]/28)*4)
       
-      y <- .gammaHRF(0:(durations[1] * scale)/scale, par) 
-      
+      y <- .gammaHRF(0:(durations[1] * scale)/scale, par)
+      #ts.plot(rev(y))
       stimulus <- convolve(stimulus, rev(y), type = "open")
+      #ts.plot(stimulus)
       stimulus <- stimulus[unique((scale:scans)%/%(scale^2 * TR)) * scale^2 * TR]/(scale^2 * TR)
       stimulus <- stimulus - mean(stimulus)
       return(stimulus)
     }  
     
-    #---------------------------------------------------------------------------------------------------------------# 
-    fmri.stimulus.PT3 <- function (scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0))[seq(2, length(c(1,1+which(diff(rawdata$stim1_on)!=0))), by = 2)], durations = 375, TR = 1/25,scale=1) 
-    {
-      
-      onsets <- onsets * TR
-      durations <- durations * TR
-      
-      onsets <- onsets * scale
-      durations <- durations * scale
-      scans <- scans * TR * scale
-      TR <- TR/scale
-      
-      no <- length(onsets)
-      
-      durations <- rep(durations, no)
-      
-      stimulus <- rep(0, ceiling(scans))
-      for (i in 1:no) {stimulus[onsets[i]:(onsets[i] + durations[i] - 1)] <- 1}
-    
-    y <- scale
-    
-    stimulus <- convolve(stimulus, rev(y), type = "open")
-    stimulus <- stimulus[unique((scale:scans)%/%(scale^2 * TR)) * scale^2 * TR]/(scale^2 * TR)
-    stimulus <- stimulus - mean(stimulus)
-    
-    return(stimulus)
-  }
-    
     #---------------------------------------------------------------------------------------------------------------#
     
     
-    gamma1 = fmri.stimulus.PT2(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0)), durations = 375, TR = 1,scale=1)
-    
-    gamma2 = fmri.stimulus.PT2(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim2_on)!=0)), durations = 125, TR = 1,scale=1)
-    
-    #---------------------------------------------------------------------------------------------------------------# 
-    gamma = as.matrix(cbind(gamma1,gamma2))
-    
-    gamma = rbind(gamma,gamma)
     #---------------------------------------------------------------------------------------------------------------#
+    
+    gamma1 = fmri.stimulus.PT2(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0))[seq(2, length(c(1,1+which(diff(rawdata$stim1_on)!=0))), by = 2)], durations = stim1_length_samples, TR = 1,scale=1)
+   
+    gamma = c(gamma1,gamma1)
+    #ts.plot(gamma1)
     my_des<-fmri.design(gamma, order = order)
     
     my_des<-cbind(my_des,rep(1:0,each=length(gamma1)))
     
-    my_des<-cbind(my_des,rep(1:0,each=length(gamma1)))
-    
-    my_des[,8]<-my_des[,8]*my_des[,1]
-    
     #---------------------------------------------------------------------------------------------------------------#
     
-    myfit<-glm.fit(x=my_des,y=c(rawdata$heartbeatcorrected_L,rawdata$heartbeatcorrected_R),family=gaussian())
-
-    class(myfit) <- c(myfit$class, c("glm", "lm"))
-    names(myfit$coefficients)<-c("stim1","stim2","intercept","t","t_sqr","t_cub","signal","interaction")
+    mydata<-data.frame(y=c(rawdata$heartbeatcorrected_L,rawdata$heartbeatcorrected_R),stim1=my_des[,1],t=my_des[,3],signal=as.factor(my_des[,6]),interaction=my_des[,1]*my_des[,6])
+    
+    
+    myfit <- glm(y~stim1+t+I(t^2)+I(t^3)+signal+interaction,data=mydata)#,contrasts=c(0,1,0,0,0,0,0))
+    
+    names(myfit$coefficients)<-c("intercept","stim1","t","t_sqr","t_cub","signal","interaction")
     
     #---------------------------------------------------------------------------------------------------------------#
     
     glm.data[j,1] <- strsplit(basename(myfile),'[.]')[[1]][1]
     
-    glm.data[j,(((order+5)*1)+2)] <- "gamma"
+    glm.data[j,(((order+4)*1)+2)] <- "gamma"
     
-    glm.data[j,2:(((order+5)*1)+1)] <- myfit$coefficients
+    glm.data[j,2:(((order+4)*1)+1)] <- myfit$coefficients
     
+    #---------------------------------------------------------------------------------------------------------------#
     
     pframe<-with(rawdata,expand.grid(t=seq(min(sec),max(sec),length=length(rawdata$heartbeatcorrected_L)),signal=c(0,1)))
     
-    pframe<-data.frame(stim1=c(gamma1,gamma1),stim2=c(gamma2,gamma2),t=pframe[,1],t_sqr=(pframe[,1])^2,t_cub=(pframe[,1])^3,signal=pframe[,2],interaction=c(gamma1,gamma1)*pframe[,2])
+    pframe<-data.frame(stim1=c(gamma1,gamma1),t=pframe[,1],t_sqr=(pframe[,1])^2,t_cub=(pframe[,1])^3,signal=pframe[,2])
     
     myplotdat<-data.frame(y=c(rawdata$heartbeatcorrected_L,rawdata$heartbeatcorrected_R),
                           x=c(rawdata$sec,rawdata$sec),
                           fitted=predict(myfit),Signal=rep(c("Left","Right"),each=length(rawdata$sec)))
     
+    
+    
+    
     g3<-ggplot(myplotdat,aes(y=y,x=x,colour=Signal))+geom_point(colour='grey',alpha=0.5)+geom_line(aes(y=fitted))+theme_bw()
-  
-    g4<-ggarrange(g3, ggarrange(g1a, g1b, g2a, g2b, ncol = 2,nrow=2, labels = c("B", "C","D", "E")), nrow = 2, labels = "A")
+    
+    #g4<-ggarrange(g3, ggarrange(g1a, g1b, g2a, g2b, ncol = 2,nrow=2, labels = c("B", "C","D", "E")), nrow = 2,labels = "A")
+    
+    g4<-ggarrange(g3, ggarrange(g1a, g2a, ncol = 2,nrow=1, labels = c("B", "C")), nrow = 2,labels = "A")
     
     g4<-annotate_figure(g4, top = text_grob(strsplit(myfile,'[.]')[[1]][1], face = "bold", size = 14))
     
     print(g4)
-
+    
     glm_data<-glm.data
   }
   
   return(glm_data)    
 }
-
+#
 #-----------------------------------------------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------------------------------------------#
 #Set the order
 order=3 #polynomial drift terms (2=quadratic, 3=cubic, etc...)
-pdf(file = 'HRF_signals_plots_WG.pdf', onefile = TRUE)
-my_results<-fTCD_glm4(path=getwd(),order=order)
+pdf(file = 'HRF_signals_plots_PPTT_comb_stim.pdf', onefile = TRUE)
+my_results<-fTCD_glm4(path=paste0(getwd(),"/Chpt4_fTCD_PPTT_rawdata"),order=order)
 dev.off()
+#stop()
+#-----------------------------------------------------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------------------------------------------------#
 
-#-----------------------------------------------------------------------------------------------------------------------#
-#-----------------------------------------------------------------------------------------------------------------------#
 
 mylong_results<-gather(my_results,key='param',value='beta',-c(ID,HRF))
 
 names(mylong_results)[2]<-"HRF"
 
+
 ggplot(mylong_results,aes(x=beta))+geom_density(fill='blue',alpha=0.5)+facet_wrap(~param,scales='free')+theme_bw()
+
+
 
 #-----------------------------------------------------------------------------------------------------------------------#
 
 #load LI based on old doppler analysis method
 
-old_res<-read.csv("WordGen_results.csv")
+old_res<-read.csv(paste0(getwd(),"/Chpt4_fTCD_PPTT_rawdata/","PPTT_results.csv"))
 
 old_res<-old_res %>% rename(ID=Filename)
 
 compare_results<-merge(my_results,old_res,by='ID',all.x = T)
 
-#-----------------------------------------------------------------------------------------------------------------------#
+#compare_results$New_LI <- ifelse(compare_results$Dparam1>0,)
+
 
 fmri_data <- read.csv('/Volumes/PSYHOME/PSYRES/pthompson/DVMB/bruckett_reanalysis/Chapter5_fMRI_data.csv')
 
-# Identify factors
-factor_variables <- c('group_cat', 'group_lat', 'sex', 'hand_self_report', 'hand_QHP_cat', 'hand_EHI_cat', 
-                      'Old_fTCD_wg_cat', 'Old_fTCD_pptt_cat', 'fTCD_wg_cat', 'fTCD_pptt_cat')
-for (i in 1:length(factor_variables))
-{factor_ind <- str_which(colnames(fmri_data), paste0('^',factor_variables[i]))
-fmri_data[,factor_ind] <- as.factor(fmri_data[,factor_ind])}
 
-# Relabel group_cat and sex factors for clarity
-# NB: group_cat 0=typical; 1=atypical
-# sex 0=male; 1=female
-levels(fmri_data$group_cat) <- c('T', 'A')
-levels(fmri_data$sex) <- c('M', 'F')
+fmri_data<-fmri_data[,c('ID','fMRI_diff_pptt_frontal','fMRI_diff_pptt_temporal','fMRI_diff_pptt_MCA')]
 
-
-fmri_data<-fmri_data[,c('ID','fMRI_diff_wg_frontal','fMRI_diff_wg_temporal','fMRI_diff_wg_MCA')]
+compare_results$ID<-substring(compare_results$ID,1,6)
+fmri_data$ID<-substring(fmri_data$ID,1,6)
 
 compare_results2<-merge(compare_results,fmri_data,by='ID')
 
-#-----------------------------------------------------------------------------------------------------------------------#
+psych::pairs.panels(compare_results2[,c('fMRI_diff_pptt_frontal','fMRI_diff_pptt_temporal','fMRI_diff_pptt_MCA','LI','param1','param2','param3','param4','param5','param6','param7')])
 
-psych::pairs.panels(compare_results2[,c('fMRI_diff_wg_frontal','fMRI_diff_wg_temporal','fMRI_diff_wg_MCA','LI','param1','param2','param3','param4','param5','param6','param7','param8')])
 
-#-----------------------------------------------------------------------------------------------------------------------#
