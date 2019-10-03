@@ -181,8 +181,8 @@ fTCD_glm4<-function(path,order)
     
     #---------------------------------------------------------------------------------------------------------------#
     
-    myseq<-seq(1,length(rawdata[,1]),by=25)
-    rawdata2<-rawdata[myseq,]
+    #myseq<-seq(1,length(rawdata[,1]),by=25)
+    rawdata2<-rawdata#[myseq,]
     
     blockends1<-cumsum(rle(rawdata2$stim1_on)$lengths)
     blockstarts1<-c(1,(blockends1+1)[-length(blockends1)])
@@ -226,7 +226,7 @@ fTCD_glm4<-function(path,order)
     g2b<-ggplot(rawdata3b,aes(y=adj_R2,x=time2,colour=epoch2))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
  
     #---------------------------------------------------------------------------------------------------------------#
-    fmri.stimulus.PT2<- function(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0))[seq(2, length(c(1,1+which(diff(rawdata$stim1_on)!=0))), by = 2)], durations = 375, TR = 1/25,scale=1)
+    fmri.stimulus.PT2<- function(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0)), durations = 375, TR = 1/25,scale=1)
     {
       
       onsets <- onsets * TR
@@ -248,9 +248,9 @@ fTCD_glm4<-function(path,order)
       }
       
       
-      par <- 4
+      par <- floor((durations[1]/28)*4)
       
-      y <- .gammaHRF(0:(28 * scale)/scale, par)
+      y <- .gammaHRF(0:(durations[1] * scale)/scale, par) 
       
       stimulus <- convolve(stimulus, rev(y), type = "open")
       stimulus <- stimulus[unique((scale:scans)%/%(scale^2 * TR)) * scale^2 * TR]/(scale^2 * TR)
@@ -289,9 +289,9 @@ fTCD_glm4<-function(path,order)
     #---------------------------------------------------------------------------------------------------------------#
     
     
-    gamma1 = fmri.stimulus.PT2(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0))[seq(2, length(c(1,1+which(diff(rawdata$stim1_on)!=0))), by = 2)], durations = 375, TR = 1/25,scale=1)
+    gamma1 = fmri.stimulus.PT2(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0)), durations = 375, TR = 1,scale=1)
     
-    gamma2 = fmri.stimulus.PT2(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim2_on)!=0))[seq(2, length(c(1,1+which(diff(rawdata$stim2_on)!=0))), by = 2)], durations = 125, TR = 1/25,scale=1)
+    gamma2 = fmri.stimulus.PT2(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim2_on)!=0)), durations = 125, TR = 1,scale=1)
     
     #---------------------------------------------------------------------------------------------------------------# 
     gamma = as.matrix(cbind(gamma1,gamma2))
@@ -308,8 +308,8 @@ fTCD_glm4<-function(path,order)
     
     #---------------------------------------------------------------------------------------------------------------#
     
-    myfit<-glm.fit(x=my_des,y=c(rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],rawdata$heartbeatcorrected_R[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]]),family=gaussian())
-?glm.fit
+    myfit<-glm.fit(x=my_des,y=c(rawdata$heartbeatcorrected_L,rawdata$heartbeatcorrected_R),family=gaussian())
+
     class(myfit) <- c(myfit$class, c("glm", "lm"))
     names(myfit$coefficients)<-c("stim1","stim2","intercept","t","t_sqr","t_cub","signal","interaction")
     
@@ -322,13 +322,13 @@ fTCD_glm4<-function(path,order)
     glm.data[j,2:(((order+5)*1)+1)] <- myfit$coefficients
     
     
-    pframe<-with(rawdata,expand.grid(t=seq(min(sec),max(sec),length=length(rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]])),signal=c(0,1)))
+    pframe<-with(rawdata,expand.grid(t=seq(min(sec),max(sec),length=length(rawdata$heartbeatcorrected_L)),signal=c(0,1)))
     
     pframe<-data.frame(stim1=c(gamma1,gamma1),stim2=c(gamma2,gamma2),t=pframe[,1],t_sqr=(pframe[,1])^2,t_cub=(pframe[,1])^3,signal=pframe[,2],interaction=c(gamma1,gamma1)*pframe[,2])
     
-    myplotdat<-data.frame(y=c(rawdata$heartbeatcorrected_L[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],rawdata$heartbeatcorrected_R[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]]),
-                          x=c(rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]],rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]]),
-                          fitted=predict(myfit),Signal=rep(c("Left","Right"),each=length(rawdata$sec[c(seq(from=0, to=length(rawdata[,1]), by=25))[-1]])))
+    myplotdat<-data.frame(y=c(rawdata$heartbeatcorrected_L,rawdata$heartbeatcorrected_R),
+                          x=c(rawdata$sec,rawdata$sec),
+                          fitted=predict(myfit),Signal=rep(c("Left","Right"),each=length(rawdata$sec)))
     
     g3<-ggplot(myplotdat,aes(y=y,x=x,colour=Signal))+geom_point(colour='grey',alpha=0.5)+geom_line(aes(y=fitted))+theme_bw()
   
