@@ -61,6 +61,7 @@ fTCD_glm_multi<-function(path,order)
     # fTCD preprocessing for GLM analysis   #
     #                                       #
     # Created by z.woodhead 30th July 2019  #
+    # Edited  by z. woodhead 3rd Oct 2019   #
     #########################################
     
     # This script takes a raw .exp datafile and preprocesses it ready for GLM analysis:
@@ -150,15 +151,16 @@ fTCD_glm_multi<-function(path,order)
       
     }
     
-    print(dim(rawdata))
-    print(
-    ts.plot(rawdata$WG_stim1_on, col='red')
+    # print(dim(rawdata))
+    # print(
+    # ts.plot(rawdata$WG_stim1_on, col='red')
     # lines(rawdata$WG_stim2_on, col='red')
     # lines(rawdata$SG_stim1_on, col='blue')
     # lines(rawdata$SG_stim2_on, col='blue')
     # lines(rawdata$LG_stim1_on, col='green')
     # lines(rawdata$LG_stim2_on, col='green')
-    )
+    #)
+    
     #----------------------------------------------------------
     # Data normalisation
     
@@ -227,7 +229,7 @@ fTCD_glm_multi<-function(path,order)
     
     #myseq<-seq(1,length(rawdata[,1]),by=25)
     rawdata2<-rawdata#[myseq,]
-    
+    #---------------------------------------------------------------------------------------------------------------#
     # WG
     WG_blockends1<-cumsum(rle(rawdata2$WG_stim1_on)$lengths)
     WG_blockstarts1<-c(1,(WG_blockends1+1)[-length(WG_blockends1)])
@@ -251,7 +253,7 @@ fTCD_glm_multi<-function(path,order)
       rawdata2$WG_adj_R1[WG_blockstarts1[i]:WG_blockends1[i]]<-rawdata2$heartbeatcorrected_R[WG_blockstarts1[i]:WG_blockends1[i]]-rawdata2$heartbeatcorrected_R[WG_blockstarts1[i]]
       rawdata2$WG_adj_R2[WG_blockstarts2[i]:WG_blockends2[i]]<-rawdata2$heartbeatcorrected_R[WG_blockstarts2[i]:WG_blockends2[i]]-rawdata2$heartbeatcorrected_R[WG_blockstarts2[i]]
     }
-    
+    #---------------------------------------------------------------------------------------------------------------#
     #SG
     SG_blockends1<-cumsum(rle(rawdata2$SG_stim1_on)$lengths)
     SG_blockstarts1<-c(1,(SG_blockends1+1)[-length(SG_blockends1)])
@@ -275,7 +277,7 @@ fTCD_glm_multi<-function(path,order)
       rawdata2$SG_adj_R1[SG_blockstarts1[i]:SG_blockends1[i]]<-rawdata2$heartbeatcorrected_R[SG_blockstarts1[i]:SG_blockends1[i]]-rawdata2$heartbeatcorrected_R[SG_blockstarts1[i]]
       rawdata2$SG_adj_R2[SG_blockstarts2[i]:SG_blockends2[i]]<-rawdata2$heartbeatcorrected_R[SG_blockstarts2[i]:SG_blockends2[i]]-rawdata2$heartbeatcorrected_R[SG_blockstarts2[i]]
     }
-    
+    #---------------------------------------------------------------------------------------------------------------#
     #LG
     LG_blockends1<-cumsum(rle(rawdata2$LG_stim1_on)$lengths)
     LG_blockstarts1<-c(1,(LG_blockends1+1)[-length(LG_blockends1)])
@@ -300,7 +302,7 @@ fTCD_glm_multi<-function(path,order)
       rawdata2$LG_adj_R2[LG_blockstarts2[i]:LG_blockends2[i]]<-rawdata2$heartbeatcorrected_R[LG_blockstarts2[i]:LG_blockends2[i]]-rawdata2$heartbeatcorrected_R[LG_blockstarts2[i]]
       
     }
-    
+    #---------------------------------------------------------------------------------------------------------------#
     rawdata3a<-rawdata2 %>% filter(stim1_on == 1)
     rawdata3b<-rawdata2 %>% filter(stim2_on == 1)
     rawdata3a$epoch1<-factor(rawdata3a$epoch1)
@@ -350,9 +352,7 @@ fTCD_glm_multi<-function(path,order)
       return(stimulus)
     }  
     
-    #---------------------------------------------------------------------------------------------------------------#
-    
-    
+
     #---------------------------------------------------------------------------------------------------------------#
     
     gamma1 = fmri.stimulus.PT2(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$WG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
@@ -389,7 +389,6 @@ fTCD_glm_multi<-function(path,order)
     class(myfit) <- c(myfit$class, c("glm", "lm"))
     names(myfit$coefficients)<-c("stim1","stim2","stim3","stim4","stim5","stim6","intercept","t","t_sqr","t_cub","signal","interaction")
     
-    
     #---------------------------------------------------------------------------------------------------------------#
     
     glm.data[j,1] <- strsplit(basename(myfile),'[.]')[[1]][1]
@@ -408,12 +407,10 @@ fTCD_glm_multi<-function(path,order)
                           x=c(rawdata$sec,rawdata$sec),
                           fitted=predict(myfit),Signal=rep(c("Left","Right"),each=length(rawdata$sec)))
     
-    
+    #---------------------------------------------------------------------------------------------------------------# 
     
     
     g3<-ggplot(myplotdat,aes(y=y,x=x,colour=Signal))+geom_point(colour='grey',alpha=0.5)+geom_line(aes(y=fitted))+theme_bw()
-    
-    #g4<-ggarrange(g3, ggarrange(g1a, g1b, g2a, g2b, ncol = 2,nrow=2, labels = c("B", "C","D", "E")), nrow = 2,labels = "A")
     
     g4<-ggarrange(g3, ggarrange(g1a, g2a, ncol = 2,nrow=1, labels = c("B", "C")), nrow = 2,labels = "A")
     
@@ -431,9 +428,9 @@ fTCD_glm_multi<-function(path,order)
 #-----------------------------------------------------------------------------------------------------------------------#
 #Set the order
 order=3 #polynomial drift terms (2=quadratic, 3=cubic, etc...)
-#pdf(file = 'HRF_signals_plots_multi_stim_holly.pdf', onefile = TRUE)
+pdf(file = 'HRF_signals_plots_multi_stim_holly.pdf', onefile = TRUE)
 my_results_multi<-fTCD_glm_multi(path=paste0(getwd(),"/Holly_fTCD_data_run1"),order=order)
-#dev.off()
+dev.off()
 #stop()
 #-----------------------------------------------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------------------------------------------#
