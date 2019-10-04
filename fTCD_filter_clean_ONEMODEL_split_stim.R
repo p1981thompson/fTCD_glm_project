@@ -349,7 +349,7 @@ fTCD_glm4<-function(path,order)
 #Set the order
 order=3 #polynomial drift terms (2=quadratic, 3=cubic, etc...)
 pdf(file = 'HRF_signals_plots_WG.pdf', onefile = TRUE)
-my_results<-fTCD_glm4(path=getwd(),order=order)
+my_results<-fTCD_glm4(path=paste0(getwd(),'/Chpt4_fTCD_WordGen_rawdata'),order=order)
 dev.off()
 
 #-----------------------------------------------------------------------------------------------------------------------#
