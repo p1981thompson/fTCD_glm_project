@@ -13,6 +13,7 @@ require(fmri)
 require(boot)
 require(ggpubr)
 library(psych)
+library(contrast)
 
 #---------------------------------------------------------------------------------------------------------------#
 
@@ -49,8 +50,8 @@ fTCD_glm_multi<-function(path,order)
   heartratemax <- 125
   
   
-  glm.data<-data.frame(matrix(NA,nrow=length(filename1),ncol=(((order+9))+2)))
-  names(glm.data)<-c('ID',paste0('param',(1:(order+9))),'HRF')
+  glm.data<-data.frame(matrix(NA,nrow=length(filename1),ncol=(((order+10))+3)))
+  names(glm.data)<-c('ID',paste0('param',(1:(order+10))),'HRF','p_value_contrast')
   
   
   for(j in 1:length(filename1))
@@ -230,92 +231,92 @@ fTCD_glm_multi<-function(path,order)
     #myseq<-seq(1,length(rawdata[,1]),by=25)
     rawdata2<-rawdata#[myseq,]
     #---------------------------------------------------------------------------------------------------------------#
-    # WG
-    WG_blockends1<-cumsum(rle(rawdata2$WG_stim1_on)$lengths)
-    WG_blockstarts1<-c(1,(WG_blockends1+1)[-length(WG_blockends1)])
-    
-    WG_blockends2<-cumsum(rle(rawdata2$WG_stim2_on)$lengths)
-    WG_blockstarts2<-c(1,(WG_blockends2+1)[-length(WG_blockends2)])
-    
-    rawdata2$WG_epoch1<-rawdata2$WG_epoch2<-rawdata2$WG_time1<-rawdata2$WG_time2<-rawdata2$WG_adj_L1<-rawdata2$WG_adj_R1<-rawdata2$WG_adj_L2<-rawdata2$WG_adj_R2<-rep(NA,length(rawdata2[,1]))
-    
-    for(i in 1:length(WG_blockends1))
-    {
-      rawdata2$WG_epoch1[WG_blockstarts1[i]:WG_blockends1[i]]<-i
-      rawdata2$WG_epoch2[WG_blockstarts2[i]:WG_blockends2[i]]<-i
-      
-      rawdata2$WG_time1[WG_blockstarts1[i]:WG_blockends1[i]]<-1:length(WG_blockstarts1[i]:WG_blockends1[i])
-      rawdata2$WG_time2[WG_blockstarts2[i]:WG_blockends2[i]]<-1:length(WG_blockstarts2[i]:WG_blockends2[i])
-      
-      rawdata2$WG_adj_L1[WG_blockstarts1[i]:WG_blockends1[i]]<-rawdata2$heartbeatcorrected_L[WG_blockstarts1[i]:WG_blockends1[i]]-rawdata2$heartbeatcorrected_L[WG_blockstarts1[i]]
-      rawdata2$WG_adj_L2[WG_blockstarts2[i]:WG_blockends2[i]]<-rawdata2$heartbeatcorrected_L[WG_blockstarts2[i]:WG_blockends2[i]]-rawdata2$heartbeatcorrected_L[WG_blockstarts2[i]]
-      
-      rawdata2$WG_adj_R1[WG_blockstarts1[i]:WG_blockends1[i]]<-rawdata2$heartbeatcorrected_R[WG_blockstarts1[i]:WG_blockends1[i]]-rawdata2$heartbeatcorrected_R[WG_blockstarts1[i]]
-      rawdata2$WG_adj_R2[WG_blockstarts2[i]:WG_blockends2[i]]<-rawdata2$heartbeatcorrected_R[WG_blockstarts2[i]:WG_blockends2[i]]-rawdata2$heartbeatcorrected_R[WG_blockstarts2[i]]
-    }
-    #---------------------------------------------------------------------------------------------------------------#
-    #SG
-    SG_blockends1<-cumsum(rle(rawdata2$SG_stim1_on)$lengths)
-    SG_blockstarts1<-c(1,(SG_blockends1+1)[-length(SG_blockends1)])
-    
-    SG_blockends2<-cumsum(rle(rawdata2$SG_stim2_on)$lengths)
-    SG_blockstarts2<-c(1,(SG_blockends2+1)[-length(SG_blockends2)])
-    
-    rawdata2$SG_epoch1<-rawdata2$SG_epoch2<-rawdata2$SG_time1<-rawdata2$SG_time2<-rawdata2$SG_adj_L1<-rawdata2$SG_adj_R1<-rawdata2$SG_adj_L2<-rawdata2$SG_adj_R2<-rep(NA,length(rawdata2[,1]))
-    
-    for(i in 1:length(SG_blockends1))
-    {
-      rawdata2$SG_epoch1[SG_blockstarts1[i]:SG_blockends1[i]]<-i
-      rawdata2$SG_epoch2[SG_blockstarts2[i]:SG_blockends2[i]]<-i
-      
-      rawdata2$SG_time1[SG_blockstarts1[i]:SG_blockends1[i]]<-1:length(SG_blockstarts1[i]:SG_blockends1[i])
-      rawdata2$SG_time2[SG_blockstarts2[i]:SG_blockends2[i]]<-1:length(SG_blockstarts2[i]:SG_blockends2[i])
-      
-      rawdata2$SG_adj_L1[SG_blockstarts1[i]:SG_blockends1[i]]<-rawdata2$heartbeatcorrected_L[SG_blockstarts1[i]:SG_blockends1[i]]-rawdata2$heartbeatcorrected_L[SG_blockstarts1[i]]
-      rawdata2$SG_adj_L2[SG_blockstarts2[i]:SG_blockends2[i]]<-rawdata2$heartbeatcorrected_L[SG_blockstarts2[i]:SG_blockends2[i]]-rawdata2$heartbeatcorrected_L[SG_blockstarts2[i]]
-      
-      rawdata2$SG_adj_R1[SG_blockstarts1[i]:SG_blockends1[i]]<-rawdata2$heartbeatcorrected_R[SG_blockstarts1[i]:SG_blockends1[i]]-rawdata2$heartbeatcorrected_R[SG_blockstarts1[i]]
-      rawdata2$SG_adj_R2[SG_blockstarts2[i]:SG_blockends2[i]]<-rawdata2$heartbeatcorrected_R[SG_blockstarts2[i]:SG_blockends2[i]]-rawdata2$heartbeatcorrected_R[SG_blockstarts2[i]]
-    }
-    #---------------------------------------------------------------------------------------------------------------#
-    #LG
-    LG_blockends1<-cumsum(rle(rawdata2$LG_stim1_on)$lengths)
-    LG_blockstarts1<-c(1,(LG_blockends1+1)[-length(LG_blockends1)])
-    
-    LG_blockends2<-cumsum(rle(rawdata2$LG_stim2_on)$lengths)
-    LG_blockstarts2<-c(1,(LG_blockends2+1)[-length(LG_blockends2)])
-    
-    rawdata2$LG_epoch1<-rawdata2$LG_epoch2<-rawdata2$LG_time1<-rawdata2$LG_time2<-rawdata2$LG_adj_L1<-rawdata2$LG_adj_R1<-rawdata2$LG_adj_L2<-rawdata2$LG_adj_R2<-rep(NA,length(rawdata2[,1]))
-    
-    for(i in 1:length(LG_blockends1))
-    {
-      rawdata2$LG_epoch1[LG_blockstarts1[i]:LG_blockends1[i]]<-i
-      rawdata2$LG_epoch2[LG_blockstarts2[i]:LG_blockends2[i]]<-i
-      
-      rawdata2$LG_time1[LG_blockstarts1[i]:LG_blockends1[i]]<-1:length(LG_blockstarts1[i]:LG_blockends1[i])
-      rawdata2$LG_time2[LG_blockstarts2[i]:LG_blockends2[i]]<-1:length(LG_blockstarts2[i]:LG_blockends2[i])
-      
-      rawdata2$LG_adj_L1[LG_blockstarts1[i]:LG_blockends1[i]]<-rawdata2$heartbeatcorrected_L[LG_blockstarts1[i]:LG_blockends1[i]]-rawdata2$heartbeatcorrected_L[LG_blockstarts1[i]]
-      rawdata2$LG_adj_L2[LG_blockstarts2[i]:LG_blockends2[i]]<-rawdata2$heartbeatcorrected_L[LG_blockstarts2[i]:LG_blockends2[i]]-rawdata2$heartbeatcorrected_L[LG_blockstarts2[i]]
-      
-      rawdata2$LG_adj_R1[LG_blockstarts1[i]:LG_blockends1[i]]<-rawdata2$heartbeatcorrected_R[LG_blockstarts1[i]:LG_blockends1[i]]-rawdata2$heartbeatcorrected_R[LG_blockstarts1[i]]
-      rawdata2$LG_adj_R2[LG_blockstarts2[i]:LG_blockends2[i]]<-rawdata2$heartbeatcorrected_R[LG_blockstarts2[i]:LG_blockends2[i]]-rawdata2$heartbeatcorrected_R[LG_blockstarts2[i]]
-      
-    }
-    #---------------------------------------------------------------------------------------------------------------#
-    rawdata3a<-rawdata2 %>% filter(stim1_on == 1)
-    rawdata3b<-rawdata2 %>% filter(stim2_on == 1)
-    rawdata3a$epoch1<-factor(rawdata3a$epoch1)
-    rawdata3a$epoch2<-factor(rawdata3a$epoch2)
-    rawdata3b$epoch1<-factor(rawdata3b$epoch1)
-    rawdata3b$epoch2<-factor(rawdata3b$epoch2)
-    
-    #---------------------------------------------------------------------------------------------------------------#
-    
-    g1a<-ggplot(rawdata3a,aes(y=adj_L1,x=time1,colour=epoch1))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
-    
-    g2a<-ggplot(rawdata3a,aes(y=adj_R1,x=time1,colour=epoch1))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
-    
+    # # WG
+    # WG_blockends1<-cumsum(rle(rawdata2$WG_stim1_on)$lengths)
+    # WG_blockstarts1<-c(1,(WG_blockends1+1)[-length(WG_blockends1)])
+    # 
+    # WG_blockends2<-cumsum(rle(rawdata2$WG_stim2_on)$lengths)
+    # WG_blockstarts2<-c(1,(WG_blockends2+1)[-length(WG_blockends2)])
+    # 
+    # rawdata2$WG_epoch1<-rawdata2$WG_epoch2<-rawdata2$WG_time1<-rawdata2$WG_time2<-rawdata2$WG_adj_L1<-rawdata2$WG_adj_R1<-rawdata2$WG_adj_L2<-rawdata2$WG_adj_R2<-rep(NA,length(rawdata2[,1]))
+    # 
+    # for(i in 1:length(WG_blockends1))
+    # {
+    #   rawdata2$WG_epoch1[WG_blockstarts1[i]:WG_blockends1[i]]<-i
+    #   rawdata2$WG_epoch2[WG_blockstarts2[i]:WG_blockends2[i]]<-i
+    #   
+    #   rawdata2$WG_time1[WG_blockstarts1[i]:WG_blockends1[i]]<-1:length(WG_blockstarts1[i]:WG_blockends1[i])
+    #   rawdata2$WG_time2[WG_blockstarts2[i]:WG_blockends2[i]]<-1:length(WG_blockstarts2[i]:WG_blockends2[i])
+    #   
+    #   rawdata2$WG_adj_L1[WG_blockstarts1[i]:WG_blockends1[i]]<-rawdata2$heartbeatcorrected_L[WG_blockstarts1[i]:WG_blockends1[i]]-rawdata2$heartbeatcorrected_L[WG_blockstarts1[i]]
+    #   rawdata2$WG_adj_L2[WG_blockstarts2[i]:WG_blockends2[i]]<-rawdata2$heartbeatcorrected_L[WG_blockstarts2[i]:WG_blockends2[i]]-rawdata2$heartbeatcorrected_L[WG_blockstarts2[i]]
+    #   
+    #   rawdata2$WG_adj_R1[WG_blockstarts1[i]:WG_blockends1[i]]<-rawdata2$heartbeatcorrected_R[WG_blockstarts1[i]:WG_blockends1[i]]-rawdata2$heartbeatcorrected_R[WG_blockstarts1[i]]
+    #   rawdata2$WG_adj_R2[WG_blockstarts2[i]:WG_blockends2[i]]<-rawdata2$heartbeatcorrected_R[WG_blockstarts2[i]:WG_blockends2[i]]-rawdata2$heartbeatcorrected_R[WG_blockstarts2[i]]
+    # }
+    # #---------------------------------------------------------------------------------------------------------------#
+    # #SG
+    # SG_blockends1<-cumsum(rle(rawdata2$SG_stim1_on)$lengths)
+    # SG_blockstarts1<-c(1,(SG_blockends1+1)[-length(SG_blockends1)])
+    # 
+    # SG_blockends2<-cumsum(rle(rawdata2$SG_stim2_on)$lengths)
+    # SG_blockstarts2<-c(1,(SG_blockends2+1)[-length(SG_blockends2)])
+    # 
+    # rawdata2$SG_epoch1<-rawdata2$SG_epoch2<-rawdata2$SG_time1<-rawdata2$SG_time2<-rawdata2$SG_adj_L1<-rawdata2$SG_adj_R1<-rawdata2$SG_adj_L2<-rawdata2$SG_adj_R2<-rep(NA,length(rawdata2[,1]))
+    # 
+    # for(i in 1:length(SG_blockends1))
+    # {
+    #   rawdata2$SG_epoch1[SG_blockstarts1[i]:SG_blockends1[i]]<-i
+    #   rawdata2$SG_epoch2[SG_blockstarts2[i]:SG_blockends2[i]]<-i
+    #   
+    #   rawdata2$SG_time1[SG_blockstarts1[i]:SG_blockends1[i]]<-1:length(SG_blockstarts1[i]:SG_blockends1[i])
+    #   rawdata2$SG_time2[SG_blockstarts2[i]:SG_blockends2[i]]<-1:length(SG_blockstarts2[i]:SG_blockends2[i])
+    #   
+    #   rawdata2$SG_adj_L1[SG_blockstarts1[i]:SG_blockends1[i]]<-rawdata2$heartbeatcorrected_L[SG_blockstarts1[i]:SG_blockends1[i]]-rawdata2$heartbeatcorrected_L[SG_blockstarts1[i]]
+    #   rawdata2$SG_adj_L2[SG_blockstarts2[i]:SG_blockends2[i]]<-rawdata2$heartbeatcorrected_L[SG_blockstarts2[i]:SG_blockends2[i]]-rawdata2$heartbeatcorrected_L[SG_blockstarts2[i]]
+    #   
+    #   rawdata2$SG_adj_R1[SG_blockstarts1[i]:SG_blockends1[i]]<-rawdata2$heartbeatcorrected_R[SG_blockstarts1[i]:SG_blockends1[i]]-rawdata2$heartbeatcorrected_R[SG_blockstarts1[i]]
+    #   rawdata2$SG_adj_R2[SG_blockstarts2[i]:SG_blockends2[i]]<-rawdata2$heartbeatcorrected_R[SG_blockstarts2[i]:SG_blockends2[i]]-rawdata2$heartbeatcorrected_R[SG_blockstarts2[i]]
+    # }
+    # #---------------------------------------------------------------------------------------------------------------#
+    # #LG
+    # LG_blockends1<-cumsum(rle(rawdata2$LG_stim1_on)$lengths)
+    # LG_blockstarts1<-c(1,(LG_blockends1+1)[-length(LG_blockends1)])
+    # 
+    # LG_blockends2<-cumsum(rle(rawdata2$LG_stim2_on)$lengths)
+    # LG_blockstarts2<-c(1,(LG_blockends2+1)[-length(LG_blockends2)])
+    # 
+    # rawdata2$LG_epoch1<-rawdata2$LG_epoch2<-rawdata2$LG_time1<-rawdata2$LG_time2<-rawdata2$LG_adj_L1<-rawdata2$LG_adj_R1<-rawdata2$LG_adj_L2<-rawdata2$LG_adj_R2<-rep(NA,length(rawdata2[,1]))
+    # 
+    # for(i in 1:length(LG_blockends1))
+    # {
+    #   rawdata2$LG_epoch1[LG_blockstarts1[i]:LG_blockends1[i]]<-i
+    #   rawdata2$LG_epoch2[LG_blockstarts2[i]:LG_blockends2[i]]<-i
+    #   
+    #   rawdata2$LG_time1[LG_blockstarts1[i]:LG_blockends1[i]]<-1:length(LG_blockstarts1[i]:LG_blockends1[i])
+    #   rawdata2$LG_time2[LG_blockstarts2[i]:LG_blockends2[i]]<-1:length(LG_blockstarts2[i]:LG_blockends2[i])
+    #   
+    #   rawdata2$LG_adj_L1[LG_blockstarts1[i]:LG_blockends1[i]]<-rawdata2$heartbeatcorrected_L[LG_blockstarts1[i]:LG_blockends1[i]]-rawdata2$heartbeatcorrected_L[LG_blockstarts1[i]]
+    #   rawdata2$LG_adj_L2[LG_blockstarts2[i]:LG_blockends2[i]]<-rawdata2$heartbeatcorrected_L[LG_blockstarts2[i]:LG_blockends2[i]]-rawdata2$heartbeatcorrected_L[LG_blockstarts2[i]]
+    #   
+    #   rawdata2$LG_adj_R1[LG_blockstarts1[i]:LG_blockends1[i]]<-rawdata2$heartbeatcorrected_R[LG_blockstarts1[i]:LG_blockends1[i]]-rawdata2$heartbeatcorrected_R[LG_blockstarts1[i]]
+    #   rawdata2$LG_adj_R2[LG_blockstarts2[i]:LG_blockends2[i]]<-rawdata2$heartbeatcorrected_R[LG_blockstarts2[i]:LG_blockends2[i]]-rawdata2$heartbeatcorrected_R[LG_blockstarts2[i]]
+    #   
+    # }
+    # #---------------------------------------------------------------------------------------------------------------#
+    # rawdata3a<-rawdata2 %>% filter(stim1_on == 1)
+    # rawdata3b<-rawdata2 %>% filter(stim2_on == 1)
+    # rawdata3a$epoch1<-factor(rawdata3a$epoch1)
+    # rawdata3a$epoch2<-factor(rawdata3a$epoch2)
+    # rawdata3b$epoch1<-factor(rawdata3b$epoch1)
+    # rawdata3b$epoch2<-factor(rawdata3b$epoch2)
+    # 
+    # #---------------------------------------------------------------------------------------------------------------#
+    # 
+    # g1a<-ggplot(rawdata3a,aes(y=adj_L1,x=time1,colour=epoch1))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+    # 
+    # g2a<-ggplot(rawdata3a,aes(y=adj_R1,x=time1,colour=epoch1))+geom_line(show.legend = FALSE)+theme_bw()+stat_summary(fun.y = mean,geom = "line",colour="black")+stat_summary(fun.data = mean_cl_boot,geom = "ribbon",colour='grey',alpha=0.2)
+    # 
     
     #---------------------------------------------------------------------------------------------------------------#
     
@@ -376,26 +377,44 @@ fTCD_glm_multi<-function(path,order)
     #---------------------------------------------------------------------------------------------------------------#
     
     my_des<-fmri.design(gamma, order = order)
-    
+
     my_des<-cbind(my_des,rep(1:0,each=length(gamma1)))
     
     #---------------------------------------------------------------------------------------------------------------#
     
-    mydata<-data.frame(y=c(rawdata$heartbeatcorrected_L,rawdata$heartbeatcorrected_R),stim1=my_des[,1],stim2=my_des[,2],stim3=my_des[,3],stim4=my_des[,4],stim5=my_des[,5],stim6=my_des[,6],t=my_des[,7],signal=as.factor(my_des[,11]),interaction=my_des[,1]*my_des[,11])
+    mydata<-data.frame(y=c(rawdata$heartbeatcorrected_L,rawdata$heartbeatcorrected_R),stim1=my_des[,1],stim2=my_des[,2],stim3=my_des[,3],stim4=my_des[,4],stim5=my_des[,5],stim6=my_des[,6],t=my_des[,8],signal=as.factor(my_des[,11]),stim3_signal=my_des[,3]*my_des[,11],stim5_signal=my_des[,5]*my_des[,11])
+
+    # contrasts reference: https://osf.io/6kudn/ and https://psyarxiv.com/crx4m/ 
+    
+    #contrasts
+    mydata$stim3_signal_adj <- (mydata$stim3_signal+mydata$stim5_signal)
+    mydata$stim5_signal_adj <- mydata$stim5_signal
     
     
-    myfit <- glm(y~stim1+stim2+stim3+stim4+stim5+stim6+t+I(t^2)+I(t^3)+signal+interaction,data=mydata,contrasts=c(0,0,1,0,-1,0,0,0,0,0,0,0))
+    myfit <- glm(y~stim1+stim2+stim3+stim4+stim5+stim6+t+I(t^2)+I(t^3)+signal+stim3_signal_adj+stim5_signal_adj,data=mydata)
+    
+    #---------------------------------------------------------------------------------------------------------------#
     
     class(myfit) <- c(myfit$class, c("glm", "lm"))
-    names(myfit$coefficients)<-c("stim1","stim2","stim3","stim4","stim5","stim6","intercept","t","t_sqr","t_cub","signal","interaction")
+    names(myfit$coefficients)<-c("stim1","stim2","stim3","stim4","stim5","stim6","intercept","t","t_sqr","t_cub","signal","stim3_signal_adj","stim5_signal_adj")
+    
+    par(mfrow=c(2,2))
+    plot(myfit)
+    par(mfrow=c(1,1))
+    
+    
+    #print(summary(myfit)$coefficients)
+    #print(summary(myfit)$coefficients[13,4])
     
     #---------------------------------------------------------------------------------------------------------------#
     
     glm.data[j,1] <- strsplit(basename(myfile),'[.]')[[1]][1]
     
-    glm.data[j,(((order+9)*1)+2)] <- "gamma"
+    glm.data[j,(((order+10)*1)+2)] <- "gamma"
     
-    glm.data[j,2:(((order+9)*1)+1)] <- myfit$coefficients
+    glm.data[j,2:(((order+10)*1)+1)] <- myfit$coefficients
+    
+    glm.data[j,16] <- summary(myfit)$coefficients[13,4]
     
     #---------------------------------------------------------------------------------------------------------------#
     
@@ -412,11 +431,11 @@ fTCD_glm_multi<-function(path,order)
     
     g3<-ggplot(myplotdat,aes(y=y,x=x,colour=Signal))+geom_point(colour='grey',alpha=0.5)+geom_line(aes(y=fitted))+theme_bw()
     
-    g4<-ggarrange(g3, ggarrange(g1a, g2a, ncol = 2,nrow=1, labels = c("B", "C")), nrow = 2,labels = "A")
+    #g4<-ggarrange(g3, ggarrange(g1a, g2a, ncol = 2,nrow=1, labels = c("B", "C")), nrow = 2,labels = "A")
     
-    g4<-annotate_figure(g4, top = text_grob(strsplit(myfile,'[.]')[[1]][1], face = "bold", size = 14))
+    #g4<-annotate_figure(g4, top = text_grob(strsplit(myfile,'[.]')[[1]][1], face = "bold", size = 14))
     
-    print(g4)
+    print(g3)
     
     glm_data<-glm.data
   }
@@ -436,7 +455,7 @@ dev.off()
 #-----------------------------------------------------------------------------------------------------------------------#
 
 
-mylong_resultsM<-gather(my_results_multi,key='param',value='beta',-c(ID,HRF))
+mylong_resultsM<-gather(my_results_multi,key='param',value='beta',-c(ID,HRF,p_value_contrast))
 
 names(mylong_resultsM)[2]<-"HRF"
 
