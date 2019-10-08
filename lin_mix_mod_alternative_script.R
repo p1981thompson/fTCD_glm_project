@@ -40,7 +40,7 @@ if(get_data==1)
 
 #unzip('Holly_fTCD_data_run1.zip')
 
-fTCD_glm_multi<-function(path,order)
+fTCD_glm_multi_lmm<-function(path,order)
 {
   
   
@@ -272,23 +272,22 @@ fTCD_glm_multi<-function(path,order)
       return(stimulus)
     }  
     
-    
     #---------------------------------------------------------------------------------------------------------------#
     bigDes <- 0
     
     for(j in unique(processed_data$ID))
     {
-    gamma1 = processed_data %>% filter(ID==j) %>% dim() %>% fmri.stimulus.PT2(.,onsets = c(1,1+which(diff(rawdata$WG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
+    gamma1 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1],onsets = c(1,1+which(diff(rawdata$WG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
     
-    gamma2 = processed_data %>% filter(ID==j) %>% dim() %>% fmri.stimulus.PT2(., onsets = c(1,1+which(diff(rawdata$WG_stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
+    gamma2 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(rawdata$WG_stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
     
-    gamma3 = processed_data %>% filter(ID==j) %>% dim() %>% fmri.stimulus.PT2(., onsets = c(1,1+which(diff(rawdata$SG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
+    gamma3 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(rawdata$SG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
     
-    gamma4 = processed_data %>% filter(ID==j) %>% dim() %>% fmri.stimulus.PT2(., onsets = c(1,1+which(diff(rawdata$SG_stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
+    gamma4 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(rawdata$SG_stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
     
-    gamma5 = processed_data %>% filter(ID==j) %>% dim() %>% fmri.stimulus.PT2(., onsets = c(1,1+which(diff(rawdata$LG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
+    gamma5 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(rawdata$LG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
     
-    gamma6 = processed_data %>% filter(ID==j) %>% dim() %>% fmri.stimulus.PT2(., onsets = c(1,1+which(diff(rawdata$LG_stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
+    gamma6 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(rawdata$LG_stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
     
     #---------------------------------------------------------------------------------------------------------------#
     gamma = as.matrix(cbind(gamma1,gamma2,gamma3,gamma4,gamma5,gamma6))
