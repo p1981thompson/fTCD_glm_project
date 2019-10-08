@@ -14,6 +14,7 @@ require(boot)
 require(ggpubr)
 library(psych)
 library(contrast)
+library(cladoRcpp) # turbo charges the convolve function used to convolve the stimulus and HRF (supper slow previously).
 
 #---------------------------------------------------------------------------------------------------------------#
 
@@ -346,7 +347,7 @@ fTCD_glm_multi<-function(path,order)
       
       y <- .gammaHRF(0:(durations[1] * scale)/scale, par)
       
-      stimulus <- convolve(stimulus, rev(y), type = "open")
+      stimulus <- rcpp_convolve(a=stimulus, b=rev(y))
 
       stimulus <- stimulus[unique((scale:scans)%/%(scale^2 * TR)) * scale^2 * TR]/(scale^2 * TR)
       stimulus <- stimulus - mean(stimulus)

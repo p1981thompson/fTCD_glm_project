@@ -265,7 +265,7 @@ fTCD_glm_multi_lmm<-function(path,order)
       
       y <- .gammaHRF(0:(durations[1] * scale)/scale, par)
       
-      stimulus <- convolve(stimulus, rev(y), type = "open")
+      stimulus <- rcpp_convolve(a=stimulus, b=rev(y))
       
       stimulus <- stimulus[unique((scale:scans)%/%(scale^2 * TR)) * scale^2 * TR]/(scale^2 * TR)
       stimulus <- stimulus - mean(stimulus)
@@ -273,38 +273,40 @@ fTCD_glm_multi_lmm<-function(path,order)
     }  
     
     #---------------------------------------------------------------------------------------------------------------#
-    bigDes <- 0
-    
+    bigDes <- matrix(, nrow = 0, ncol = 11)
+
     for(j in unique(processed_data$ID))
     {
-    gamma1 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1],onsets = c(1,1+which(diff(rawdata$WG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
-    
-    gamma2 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(rawdata$WG_stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
-    
-    gamma3 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(rawdata$SG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
-    
-    gamma4 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(rawdata$SG_stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
-    
-    gamma5 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(rawdata$LG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
-    
-    gamma6 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(rawdata$LG_stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
-    
+    gamma1 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1],onsets = c(1,1+which(diff(processed_data$WG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
+ 
+    gamma2 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(processed_data$WG_stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
+
+    gamma3 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(processed_data$SG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
+
+    gamma4 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(processed_data$SG_stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
+
+    gamma5 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(processed_data$LG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
+
+    gamma6 = fmri.stimulus.PT2(scans=dim(processed_data[processed_data$ID==j,])[1], onsets = c(1,1+which(diff(processed_data$LG_stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
+
     #---------------------------------------------------------------------------------------------------------------#
     gamma = as.matrix(cbind(gamma1,gamma2,gamma3,gamma4,gamma5,gamma6))
-    
+
     gamma = rbind(gamma,gamma)
-    
+
     #---------------------------------------------------------------------------------------------------------------#
     
     my_des<-fmri.design(gamma, order = order)
-    
+
     my_des<-cbind(my_des,rep(1:0,each=length(gamma1)))
-    
+
     bigDes<-rbind(bigDes,my_des)
-    
+
     }
-    
+
     #---------------------------------------------------------------------------------------------------------------# 
+    print(dim(bigDes))
+    print(length(c(processed_data$heartbeatcorrected_L,processed_data$heartbeatcorrected_R)))
     
     mydata<-data.frame(y=c(processed_data$heartbeatcorrected_L,processed_data$heartbeatcorrected_R),stim1=bigDes[,1],stim2=bigDes[,2],stim3=bigDes[,3],stim4=bigDes[,4],stim5=bigDes[,5],stim6=bigDes[,6],t=bigDes[,8],signal=as.factor(bigDes[,11]),stim3_signal=bigDes[,3]*bigDes[,11],stim5_signal=bigDes[,5]*bigDes[,11],id=processed_data$ID)
     #---------------------------------------------------------------------------------------------------------------#
@@ -317,7 +319,7 @@ fTCD_glm_multi_lmm<-function(path,order)
     #---------------------------------------------------------------------------------------------------------------#
     
     myfit <- lmer(y~stim1+stim2+stim3+stim4+stim5+stim6+t+I(t^2)+I(t^3)+signal+stim3_signal_adj+stim5_signal_adj + (1+stim1+stim2+stim3+stim4+stim5+stim6+signal+stim3_signal_adj+stim5_signal_adj|id),data=mydata)
-    
+ 
     #---------------------------------------------------------------------------------------------------------------#
     
     glm.data[j,1] <- strsplit(basename(myfile),'[.]')[[1]][1]
@@ -334,7 +336,7 @@ fTCD_glm_multi_lmm<-function(path,order)
     
     myplotdat<-data.frame(y=c(processed_data$heartbeatcorrected_L,processed_data$heartbeatcorrected_R), x=processed_data$sec,
                           fitted=predict(myfit),Signal=rep(c("Left","Right"),each=length(rawdata$sec)))
-    
+
     #---------------------------------------------------------------------------------------------------------------# 
     
     
@@ -343,7 +345,7 @@ fTCD_glm_multi_lmm<-function(path,order)
     print(g3)
     
     glm_data<-glm.data
-  
+
   
   return(glm_data)    
 }
