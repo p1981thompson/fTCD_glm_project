@@ -15,6 +15,7 @@ require(ggpubr)
 library(psych)
 library(contrast)
 library(lmerTest)
+library(cladoRcpp) # turbo charges the convolve function used to convolve the stimulus and HRF (supper slow previously).
 
 
 #---------------------------------------------------------------------------------------------------------------#
