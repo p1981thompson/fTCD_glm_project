@@ -16,6 +16,7 @@ library(psych)
 library(contrast)
 library(lmerTest)
 library(cladoRcpp) # turbo charges the convolve function used to convolve the stimulus and HRF (supper slow previously).
+library(data.table)
 
 
 #---------------------------------------------------------------------------------------------------------------#
@@ -306,20 +307,22 @@ fTCD_glm_multi_lmm<-function(path,order)
     }
 
     #---------------------------------------------------------------------------------------------------------------# 
-    print(dim(bigDes))
-    print(length(c(processed_data$heartbeatcorrected_L,processed_data$heartbeatcorrected_R)))
+    #print(class(bigDes))
+    #print(length(c(processed_data$heartbeatcorrected_L,processed_data$heartbeatcorrected_R)))
     
-    mydata<-data.frame(y=c(processed_data$heartbeatcorrected_L,processed_data$heartbeatcorrected_R),stim1=bigDes[,1],stim2=bigDes[,2],stim3=bigDes[,3],stim4=bigDes[,4],stim5=bigDes[,5],stim6=bigDes[,6],t=bigDes[,8],signal=as.factor(bigDes[,11]),stim3_signal=bigDes[,3]*bigDes[,11],stim5_signal=bigDes[,5]*bigDes[,11],id=processed_data$ID)
+    # added data.table rather than data.frame, but now can't evalulate without do call. it can't handle id variable, so need to look into that (9/10/19)
+    
+    mydata<-data.table(y=c(processed_data$heartbeatcorrected_L,processed_data$heartbeatcorrected_R),stim1=bigDes[,1],stim2=bigDes[,2],stim3=bigDes[,3],stim4=bigDes[,4],stim5=bigDes[,5],stim6=bigDes[,6],t=bigDes[,8],signal=as.factor(bigDes[,11]),stim3_signal=bigDes[,3]*bigDes[,11],stim5_signal=bigDes[,5]*bigDes[,11],id=processed_data$ID)
     #---------------------------------------------------------------------------------------------------------------#
     # contrasts reference: https://osf.io/6kudn/ and https://psyarxiv.com/crx4m/ 
-    
+    print(str(mydata))
     #contrasts
     mydata$stim3_signal_adj <- (mydata$stim3_signal+mydata$stim5_signal)
     mydata$stim5_signal_adj <- mydata$stim5_signal
     
     #---------------------------------------------------------------------------------------------------------------#
     
-    myfit <- lmer(y~stim1+stim2+stim3+stim4+stim5+stim6+t+I(t^2)+I(t^3)+signal+stim3_signal_adj+stim5_signal_adj + (1+stim1+stim2+stim3+stim4+stim5+stim6+signal+stim3_signal_adj+stim5_signal_adj|id),data=mydata)
+    myfit <-mydata %>% do(lmer(y~stim1+stim2+stim3+stim4+stim5+stim6+t+I(t^2)+I(t^3)+signal+stim3_signal_adj+stim5_signal_adj + (1+stim1+stim2+stim3+stim4+stim5+stim6+signal+stim3_signal_adj+stim5_signal_adj|id),.))
  
     #---------------------------------------------------------------------------------------------------------------#
     
