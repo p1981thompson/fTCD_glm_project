@@ -310,9 +310,9 @@ fTCD_glm_multi_lmm<-function(path,order)
     #print(class(bigDes))
     #print(length(c(processed_data$heartbeatcorrected_L,processed_data$heartbeatcorrected_R)))
     
-    # added data.table rather than data.frame, but now can't evalulate without do call. it can't handle id variable, so need to look into that (9/10/19)
+    # added data.table rather than data.frame to handle memory issues.
     
-    mydata<-data.table(y=c(processed_data$heartbeatcorrected_L,processed_data$heartbeatcorrected_R),stim1=bigDes[,1],stim2=bigDes[,2],stim3=bigDes[,3],stim4=bigDes[,4],stim5=bigDes[,5],stim6=bigDes[,6],t=bigDes[,8],signal=as.factor(bigDes[,11]),stim3_signal=bigDes[,3]*bigDes[,11],stim5_signal=bigDes[,5]*bigDes[,11],id=processed_data$ID)
+    mydata<-data.table(y=c(processed_data$heartbeatcorrected_L,processed_data$heartbeatcorrected_R),stim1=bigDes[,1],stim2=bigDes[,2],stim3=bigDes[,3],stim4=bigDes[,4],stim5=bigDes[,5],stim6=bigDes[,6],t=bigDes[,8],signal=as.factor(bigDes[,11]),stim3_signal=bigDes[,3]*bigDes[,11],stim5_signal=bigDes[,5]*bigDes[,11],id=as.factor(unlist(processed_data$ID)))
     #---------------------------------------------------------------------------------------------------------------#
     # contrasts reference: https://osf.io/6kudn/ and https://psyarxiv.com/crx4m/ 
     print(str(mydata))
@@ -322,8 +322,8 @@ fTCD_glm_multi_lmm<-function(path,order)
     
     #---------------------------------------------------------------------------------------------------------------#
     
-    myfit <-mydata %>% do(lmer(y~stim1+stim2+stim3+stim4+stim5+stim6+t+I(t^2)+I(t^3)+signal+stim3_signal_adj+stim5_signal_adj + (1+stim1+stim2+stim3+stim4+stim5+stim6+signal+stim3_signal_adj+stim5_signal_adj|id),.))
- 
+    myfit <-mydata %>% lmer(y~stim1+stim2+stim3+stim4+stim5+stim6+t+I(t^2)+I(t^3)+signal+stim3_signal_adj+stim5_signal_adj + (1+stim1+stim2+stim3+stim4+stim5+stim6+signal+stim3_signal_adj+stim5_signal_adj|id),.)
+    
     #---------------------------------------------------------------------------------------------------------------#
     
     glm.data[j,1] <- strsplit(basename(myfile),'[.]')[[1]][1]
