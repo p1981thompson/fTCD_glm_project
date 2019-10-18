@@ -80,8 +80,8 @@ fTCD_glm_multi<-function(path,order)
   heartratemax <- 125
   
   # set up data.frame to hold the outputted parameter estimates from the GLMs.
-  glm.data<-data.frame(matrix(NA,nrow=length(filename1),ncol=(((order+10))+3)))
-  names(glm.data)<-c('ID',paste0('param',(1:(order+10))),'HRF','p_value_contrast')
+  glm.data<-data.frame(matrix(NA,nrow=length(filename1),ncol=(((order+11))+3)))
+  names(glm.data)<-c('ID',paste0('param',(1:(order+11))),'HRF','p_value_contrast')
   
   #---------------------------------------------------------------------------------------------------------------#
   #########################################
@@ -121,19 +121,21 @@ fTCD_glm_multi<-function(path,order)
     norigmarkers = length(origmarkerlist)
     
     # Stimulus order: In this task, there were three tasks:
-        # 1) Word Generation (WG)
-        # 2) Sentence Generation (SG)
-        # 3) List Generation (LG)
+    # 1) Word Generation (WG)
+    # 2) Sentence Generation (SG)
+    # 3) List Generation (LG)
     
     # Here's the list of the order they appeared in run 1:
-    stim_order <- c(1,2,3,2,3,1,3,1,2,3,2,1,2,1,3,1,3,2,1,2,3,2,3,1,3,1,2,3,2,1)
+    #stim_order <- c(1,2,3,2,3,1,3,1,2,3,2,1,2,1,3,1,3,2,1,2,3,2,3,1,3,1,2,3,2,1)
+    
+    stim_order <- c(2,1,3,1,3,2,1,2,3,2,3,1,3,1,2,3,2,1,2,1,3,1,3,2,1,2,3,2,3,1)
     
     # Stimulus timings: Each task has the same timings. Each task is comprised of two stimuli: stim1 = covert speech generation; stim2 = overt speech generation
     # The stimulus starts 3 seconds after marker (stim1_delay_sec = 3)
     # Covert generation lasts for 12 seconds (stim1_length_sec = 12)
     # Overt generation ('reporting') starts immediately after, i.e. 15 seconds after marker (stim2_delay_sec = 15
     # Overt generation lasts for 5 seconds (stim2_length_sec = 5)
-
+    
     stim1_delay_sec <- 3
     stim1_delay_samples <- stim1_delay_sec * samplingrate
     stim1_length_sec <- 12
@@ -163,7 +165,7 @@ fTCD_glm_multi<-function(path,order)
         rawdata$WG_stim1_on[(origmarkerlist[m]+stim1_delay_samples):(origmarkerlist[m]+stim1_delay_samples+stim1_length_samples)] <- 1
         rawdata$WG_stim2_on[(origmarkerlist[m]+stim2_delay_samples):(origmarkerlist[m]+stim2_delay_samples+stim2_length_samples)] <- 1
       }
-     
+      
       if (mytask == 2) {
         rawdata$SG_stim1_on[(origmarkerlist[m]+stim1_delay_samples):(origmarkerlist[m]+stim1_delay_samples+stim1_length_samples)] <- 1
         rawdata$SG_stim2_on[(origmarkerlist[m]+stim2_delay_samples):(origmarkerlist[m]+stim2_delay_samples+stim2_length_samples)] <- 1
@@ -237,7 +239,7 @@ fTCD_glm_multi<-function(path,order)
     
     #---------------------------------------------------------------------------------------------------------------#
     # Save processed file in csv format
-    mynewfile <- paste0(getwd(),"/Holly_fTCD_data_run1/",strsplit(myfile, '*.exp'), '_processed.csv')
+    mynewfile <- paste0(getwd(),"/Holly_fTCD_data_run2/",strsplit(myfile, '*.exp'), '_processed.csv')
     write.csv(rawdata, mynewfile, row.names=F)
     
     #---------------------------------------------------------------------------------------------------------------#
@@ -245,7 +247,7 @@ fTCD_glm_multi<-function(path,order)
     #myseq<-seq(1,length(rawdata[,1]),by=25)
     rawdata2<-rawdata#[myseq,]
     #---------------------------------------------------------------------------------------------------------------#
-   
+    
     #---------------------------------------------------------------------------------------------------------------#
     #########################################
     # PART 2                                #
@@ -283,7 +285,7 @@ fTCD_glm_multi<-function(path,order)
       y <- .gammaHRF(0:(durations[1] * scale)/scale, par)
       
       stimulus <- rcpp_convolve(a=stimulus, b=rev(y))
-
+      
       stimulus <- stimulus[unique((scale:scans)%/%(scale^2 * TR)) * scale^2 * TR]/(scale^2 * TR)
       stimulus <- stimulus - mean(stimulus)
       return(stimulus)
@@ -291,7 +293,7 @@ fTCD_glm_multi<-function(path,order)
     
     #---------------------------------------------------------------------------------------------------------------#
     
-     # Create all convolves stimulus functions with HRF (applying the new fmri.stimulus.PT2 function above)
+    # Create all convolves stimulus functions with HRF (applying the new fmri.stimulus.PT2 function above)
     
     gamma1 = fmri.stimulus.PT2(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$WG_stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
     
@@ -320,7 +322,7 @@ fTCD_glm_multi<-function(path,order)
     # create the design matrix
     
     my_des<-fmri.design(gamma, order = order)
-
+    
     # Add a dummy variable for side (signal). This is either 0 or 1 for left and right respectively.
     my_des<-cbind(my_des,rep(1:0,each=length(gamma1)))
     
@@ -328,40 +330,44 @@ fTCD_glm_multi<-function(path,order)
     
     # Use the design matrix to finish contructing the data for each GLM. 
     
-    mydata<-data.frame(y=c(rawdata$heartbeatcorrected_L,rawdata$heartbeatcorrected_R),stim1=my_des[,1],stim2=my_des[,2],stim3=my_des[,3],stim4=my_des[,4],stim5=my_des[,5],stim6=my_des[,6],t=my_des[,8],signal=as.factor(my_des[,11]),stim3_signal=my_des[,3]*my_des[,11],stim5_signal=my_des[,5]*my_des[,11])
-
+    mydata<-data.frame(y=c(rawdata$heartbeatcorrected_L,rawdata$heartbeatcorrected_R),stim1=my_des[,1],stim2=my_des[,2],stim3=my_des[,3],stim4=my_des[,4],stim5=my_des[,5],stim6=my_des[,6],t=my_des[,8],signal=as.factor(my_des[,11]),stim1_signal=my_des[,1]*my_des[,11],stim3_signal=my_des[,3]*my_des[,11],stim5_signal=my_des[,5]*my_des[,11])
+    
     # We use the approach described in https://osf.io/6kudn/ and https://psyarxiv.com/crx4m/, to estimate the difference in interaction terms 'signal*stim1_SG' and 'signal*stim1_LG'. This tests the hypothesis that SG>LG laterality as the laterality is estimated as the difference in stimulus in left vs right signal calculated via the individual interactions.
     
     #contrasts set up 
-    mydata$stim3_signal_adj <- (mydata$stim3_signal+mydata$stim5_signal)
-    mydata$stim5_signal_adj <- mydata$stim5_signal
-    
+    # mydata$stim3_signal_adj <- (mydata$stim3_signal+mydata$stim5_signal)
+    # mydata$stim5_signal_adj <- mydata$stim5_signal
+    # 
     # Generalised linear model for each inidividual.
     
-    myfit <- glm(y~stim1+stim2+stim3+stim4+stim5+stim6+t+I(t^2)+I(t^3)+signal+stim3_signal_adj+stim5_signal_adj,data=mydata)
+    #myfit <- glm(y~stim1+stim2+stim3+stim4+stim5+stim6+t+I(t^2)+I(t^3)+signal+stim3_signal_adj+stim5_signal_adj,data=mydata)
+    myfit <- glm(y~stim1+stim2+stim3+stim4+stim5+stim6+t+I(t^2)+I(t^3)+signal+stim1_signal+stim3_signal+stim5_signal,data=mydata)
+    
+    
     
     #---------------------------------------------------------------------------------------------------------------#
     
     # Ensure class and coefficients are correctly labelled.
     class(myfit) <- c(myfit$class, c("glm", "lm"))
-    names(myfit$coefficients)<-c("stim1","stim2","stim3","stim4","stim5","stim6","intercept","t","t_sqr","t_cub","signal","stim3_signal_adj","stim5_signal_adj")
+    #names(myfit$coefficients)<-c("stim1","stim2","stim3","stim4","stim5","stim6","intercept","t","t_sqr","t_cub","signal","stim3_signal_adj","stim5_signal_adj")
+    names(myfit$coefficients)<-c("stim1","stim2","stim3","stim4","stim5","stim6","intercept","t","t_sqr","t_cub","signal","stim1_signal","stim3_signal","stim5_signal")
     
     # Extract the diagnostic plots for each glm.
-    par(mfrow=c(2,2))
-    plot(myfit)
-    par(mfrow=c(1,1))
-    
+    # par(mfrow=c(2,2))
+    # plot(myfit)
+    # par(mfrow=c(1,1))
+    # 
     #---------------------------------------------------------------------------------------------------------------#
     
     # Extract the parameter estimates and record them for later use. Data stored in data.frame called 'glm.data'.
     
     glm.data[j,1] <- strsplit(basename(myfile),'[.]')[[1]][1]
     
-    glm.data[j,(((order+10)*1)+2)] <- "gamma"
+    glm.data[j,(((order+11)*1)+2)] <- "gamma"
     
-    glm.data[j,2:(((order+10)*1)+1)] <- myfit$coefficients
+    glm.data[j,2:(((order+11)*1)+1)] <- myfit$coefficients
     
-    glm.data[j,16] <- summary(myfit)$coefficients[13,4]
+    glm.data[j,17] <- summary(myfit)$coefficients[14,4]
     
     #---------------------------------------------------------------------------------------------------------------#
     
@@ -378,7 +384,7 @@ fTCD_glm_multi<-function(path,order)
     #---------------------------------------------------------------------------------------------------------------# 
     
     # as we are fitting in a loop and printing to file, we need to use 'print' function with ggplot.
-    g3<-ggplot(myplotdat,aes(y=y,x=x,colour=Signal))+geom_point(colour='grey',alpha=0.5)+geom_line(aes(y=fitted))+theme_bw()
+    g3<-ggplot(myplotdat,aes(y=y,x=x,colour=Signal))+geom_point(colour='grey',alpha=0.5)+geom_line(aes(y=fitted))+theme_bw()+ggtitle(strsplit(myfile, '*.exp'))
     
     print(g3)
     
@@ -397,8 +403,8 @@ fTCD_glm_multi<-function(path,order)
 #-----------------------------------------------------------------------------------------------------------------------#
 #Set the order
 order=3 #polynomial drift terms (2=quadratic, 3=cubic, etc...)
-pdf(file = 'HRF_signals_plots_multi_stim_holly.pdf', onefile = TRUE) # print plots to file
-my_results_multi<-fTCD_glm_multi(path=paste0(getwd(),"/Holly_fTCD_data_run1"),order=order)
+pdf(file = 'HRF_signals_plots_multi_stim_holly_LI2.pdf', onefile = TRUE) # print plots to file
+my_results_multi2<-fTCD_glm_multi(path=paste0(getwd(),"/Holly_fTCD_data_run2"),order=order)
 dev.off()
 
 #-----------------------------------------------------------------------------------------------------------------------#
@@ -406,12 +412,12 @@ dev.off()
 
 # Some extra diagnostic plots to show distributions of the parameter estimates for all models (one glm per individual)
 
-mylong_resultsM<-gather(my_results_multi,key='param',value='beta',-c(ID,HRF,p_value_contrast))
+mylong_resultsM2<-gather(my_results_multi2,key='param',value='beta',-c(ID,HRF,p_value_contrast))
 
-names(mylong_resultsM)[2]<-"HRF"
+names(mylong_resultsM2)[2]<-"HRF"
 
 
-ggplot(mylong_resultsM,aes(x=beta))+geom_density(fill='blue',alpha=0.5)+facet_wrap(~param,scales='free')+theme_bw()
+ggplot(mylong_resultsM2,aes(x=beta))+geom_density(fill='blue',alpha=0.5)+facet_wrap(~param,scales='free')+theme_bw()
 
 
 
@@ -423,11 +429,11 @@ old_res_holly<-read.csv(paste0(getwd(),"/Holly_fTCD_data_run1/","LI_baseline_con
 
 old_res_holly$ID<-sprintf('%0.3d', old_res_holly$ID)
 
-compare_resultsM<-merge(my_results_multi,old_res_holly,by='ID',all.x = T)
+compare_resultsM2<-merge(my_results_multi2,old_res_holly,by='ID',all.x = T)
 
 
-psych::pairs.panels(compare_resultsM[,names(compare_resultsM) != c('ID','HRF','p_value_contrast')],cex.cor=3)
+psych::pairs.panels(compare_resultsM2[,names(compare_resultsM2) != c('ID','HRF','p_value_contrast')],cex.cor=3)
 
-psych::pairs.panels(compare_resultsM[, c('param13',"SG.LG")],cex.cor=1)
+psych::pairs.panels(compare_resultsM2[, c('param12','param13','param14',"Run2_SG","Run2_WG","Run2_LG")],cex.cor=1)
 
 
