@@ -93,7 +93,7 @@ fTCD_glm_A2_AC<-function(path,order)
   #########################################
   #---------------------------------------------------------------------------------------------------------------#
   
-  for(j in (c(1:(length(filename1)/4)*2)-1)) # skips the second repeated measure (D1 only), only fits for first 35 ids.
+  for(j in (c(1:(length(filename1)/2)*2)-1)) # skips the second repeated measure (D1 only), only fits for first 35 ids.
   {
     print(filename1[j])
     
@@ -300,7 +300,7 @@ fTCD_glm_A2_AC<-function(path,order)
     # Uses autocorrelated errors via gls model. (uses the 'nlme' package to achieve this error structure).
     
     myfit <- gls(y~stim1+stim2+t+I(t^2)+I(t^3)+signal+stim1_signal,data=mydata,
-                 correlation=corAR1(form=~t|signal))
+                 correlation=corAR1(form=~t))
     
     print(names(myfit$coefficients))
     
@@ -346,56 +346,45 @@ fTCD_glm_A2_AC<-function(path,order)
 #-----------------------------------------------------------------------------------------------------------------------#
 #Set the order
 order=3 #polynomial drift terms (2=quadratic, 3=cubic, etc...)
-pdf(file = 'HRF_signals_plots_A2project_SG_AutoCor_Err_Downsampled5Hz_canonical.pdf', onefile = TRUE) #print plots to file.
+pdf(file = '/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/HRF_signals_plots_A2project_SG_AutoCor_Err_Downsampled5Hz_canonical.pdf', onefile = TRUE) #print plots to file.
 my_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical<-fTCD_glm_A2_AC(path=paste0('/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project','/A2_SG_data'),order=order)
 dev.off()
 
+my_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical<-my_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical[complete.cases(my_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical), ]
+
+write.csv(my_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical,'/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/downsample_at_5Hz/my_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical.csv',row.names=FALSE)
 #-----------------------------------------------------------------------------------------------------------------------#
 
-#Exclusions
-
-# exclude_id<-c(paste0('A2_',c('013','031','102','108','120','121','125','129','134','139','141','142'),'_D1'),paste0('A2_',c('013','031','102','108','120','121','125','129','134','139','141','142'),'_D2'))
+exclude_id<-c(paste0('A2_',c('013','031'),'_D1'))
 # 
-# my_results_A2_SG_ex_AutoCor_Err <- my_results_A2_SG_AutoCor_Err[!my_results_A2_SG_AutoCor_Err$ID %in% exclude_id,]
+my_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical <- my_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical[!my_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical$ID %in% exclude_id,]
 # 
-# my_results_A2_SG_ex_AutoCor_Err$session<-ifelse(substring(my_results_A2_SG_ex_AutoCor_Err$ID,9,9)==1,'glm_LI_SG1','glm_LI_SG2')
 # 
 # 
 # #-----------------------------------------------------------------------------------------------------------------------#
+# --------------------------------------------------------------------------------------------------------------#
 # 
-# # Some extra diagnostic plots to show distributions of the parameter estimates for all models (one glm per individual)
-# mylong_results_A2_SG_AutoCor_Err<-gather(my_results_A2_SG_ex_AutoCor_Err,key='param',value='beta',-c(ID,HRF,session))
+my_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical$ID <- substring(my_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical$ID,4,6)
 # 
-# #names(mylong_results_A2_SG)[2]<-"HRF"
-# 
-# ggplot(mylong_results_A2_SG_AutoCor_Err,aes(x=beta))+geom_density(fill='blue',alpha=0.5)+facet_grid(param~session,scales='free')+theme_bw()
-# 
-# #-----------------------------------------------------------------------------------------------------------------------#
-# 
-# mylong_results_A2_SG_AutoCor_Err$ID <- substring(mylong_results_A2_SG_AutoCor_Err$ID,4,6)
-# 
-# myspread_results_A2_SG_AutoCor_Err<-spread(mylong_results_A2_SG_AutoCor_Err,session,beta)
-# 
-# myspread_results_A2_SG_AutoCor_Err <- myspread_results_A2_SG_AutoCor_Err[myspread_results_A2_SG_AutoCor_Err$param=='param8',]
 # 
 # #-----------------------------------------------------------------------------------------------------------------------#
 # #load LI based on old doppler analysis method
 # 
-# old_res_A2<-read.csv("A2_SG_LI.csv")
+old_res_A2<-read.csv("/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/A2_SG_LI.csv")
 # 
-# old_res_A2$ID<-sprintf('%0.3d', old_res_A2$ID)
+old_res_A2$ID<-sprintf('%0.3d', old_res_A2$ID)
 # 
-# old_res_A2<-old_res_A2[,1:3]
+old_res_A2<-old_res_A2[,1:3]
 # 
-# names(old_res_A2)<-c('ID','LI_SG1','LI_SG2')
+names(old_res_A2)<-c('ID','LI_SG1','LI_SG2')
 # 
-# compare_results_A2_SG_AutoCor_Err<-merge(myspread_results_A2_SG_AutoCor_Err,old_res_A2,by='ID',all.x = T)
+compare_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical<-merge(my_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical,old_res_A2,by='ID',all.x = T)
 # 
 # #-----------------------------------------------------------------------------------------------------------------------#
 # 
 # #-----------------------------------------------------------------------------------------------------------------------#
 # 
 # #Print correlation matrix plots to check association between the old LI and new glm-derived LI measures.
-# psych::pairs.panels(compare_results_A2_SG_AutoCor_Err[,c('glm_LI_SG1','glm_LI_SG2','LI_SG1','LI_SG2')],cex.cor=1)
+psych::pairs.panels(compare_results_A2_SG_AutoCor_Err_downsampled5Hz_canonical[,c('param8','LI_SG1')],cex.cor=1)
 # 
 # #-----------------------------------------------------------------------------------------------------------------------#
