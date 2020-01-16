@@ -1,8 +1,8 @@
 #=========================================================================================================#
-# Simulation code - gamma HRF (fastGLS)
+# Simulation code - canonical HRF (fastGLS)
 #=========================================================================================================#
 
-# 14-JAN-2020 
+# 15-JAN-2020 
 
 #Testing out a different method of simulating the time series data.
 
@@ -22,11 +22,11 @@ set.seed(54321)
 
 N = 100
 
-N = 100
-
-.gammaHRF <- function(t, par = NULL) {
-  th <- 0.242 * par[1]
-  1/(th * factorial(3)) * (t/th)^3 * exp(-t/th)
+.canonicalHRF <- function(t, par = NULL) {
+  ttpr <- par[1] * par[3]
+  ttpu <- par[2] * par[4]
+  (t/ttpr)^par[1] * exp(-(t - ttpr)/par[3]) - par[5] * 
+    (t/ttpu)^par[2] * exp(-(t - ttpu)/par[4])
 }
 
 
@@ -35,9 +35,9 @@ obs_per_sec <- 2
 stim1_s <- rep(c(rep(0,5*obs_per_sec),rep(c(1,0),times=c(15*obs_per_sec,35*obs_per_sec))),15) #insert from other programs simulted stim and convolve with gamma. 
 stim2_s <- rep(c(rep(0,20*obs_per_sec),rep(c(1,0),times=c(5*obs_per_sec,30*obs_per_sec))),15) #same as above
 
-par <- floor((30/28)*4)
+par <- c(6, 12, 0.9, 0.9, 0.35)
 
-y <- .gammaHRF(0:30, par) 
+y <- .canonicalHRF(0:30, par)/2.885802
 
 stim1_c <- rcpp_convolve(a=stim1_s, b=rev(y))
 stim2_c <- rcpp_convolve(a=stim2_s, b=rev(y))
@@ -146,7 +146,7 @@ Rcpp::List fastgls(const arma::mat &X, const arma::colvec &y, const arma::mat &S
 
 names(mod1)<-c("(Intercept)", "stim1", "stim2", "t", "I(t^2)", "I(t^3)", "signal1", "stim1_signal")
 
-write.csv(mod1,"/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/FASTgls_gamma_results1_inc_corErr0.7_newmethod.csv")
+write.csv(mod1,"/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/FASTgls_canonical_results1_inc_corErr0.7_newmethod.csv")
 
 #=========================================================================================================#
 #=========================================================================================================#
@@ -154,11 +154,11 @@ write.csv(mod1,"/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulati
 long_sim_data_mod1<-gather(mod1,key='variable','estimate')
 CI_mod1 <- long_sim_data_mod1 %>% dplyr::group_by(variable) %>% dplyr::summarise(CI_low=quantile(estimate,probs = c(0.025)),mean=mean(estimate),CI_upp=quantile(estimate,probs = c(0.975)))
 
-write.csv(CI_mod1,"/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/FASTgls_gamma_results1_CIs_inc_corErr0.7_newMethod.csv")
+write.csv(CI_mod1,"/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/FASTgls_canonical_results1_CIs_inc_corErr0.7_newMethod.csv")
 
 vline.dat <- data.frame(variable=unique(long_sim_data_mod1$variable), vl=c(b0,b1,b2,b3,b4,b5,b6,b7))
 ggplot(long_sim_data_mod1,aes(x=estimate))+geom_histogram()+geom_vline(aes(xintercept=vl), data=vline.dat,colour='red') +facet_wrap(.~variable,scales = 'free')+theme_bw()
-ggsave('/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/FASTgls_gamma_results1_estimate_dist_inc_corErr0.7_newMethod.png')
+ggsave('/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/FASTgls_canonical_results1_estimate_dist_inc_corErr0.7_newMethod.png')
 #=========================================================================================================#
 #=========================================================================================================#
 
@@ -173,18 +173,18 @@ ggplot(long_sim_data_mod2,aes(x=estimate))+geom_histogram()+geom_vline(aes(xinte
 
 
 
-write.csv(mod3,"/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/lm_gamma_results1_inc_corErr0.7_newmethod.csv")
-write.csv(se3,"/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/lm_gamma_results1_inc_corErr0.7_SE_newMethod.csv")
+write.csv(mod3,"/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/lm_canonical_results1_inc_corErr0.7_newmethod.csv")
+write.csv(se3,"/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/lm_canonical_results1_inc_corErr0.7_SE_newMethod.csv")
 
 long_sim_data_mod3<-gather(mod3,key='variable','estimate')
 CI_mod3 <- long_sim_data_mod3 %>% dplyr::group_by(variable) %>% dplyr::summarise(CI_low=quantile(estimate,probs = c(0.025)),mean=mean(estimate),CI_upp=quantile(estimate,probs = c(0.975)))
 
-write.csv(CI_mod3,"/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/lm_gamma_results1_CIs_inc_corErr0.7_newMethod.csv")
+write.csv(CI_mod3,"/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/lm_canonical_results1_CIs_inc_corErr0.7_newMethod.csv")
 
 
 vline.dat <- data.frame(variable=unique(long_sim_data_mod3$variable), vl=c(b0,b1,b2,b3,b4,b5,b6,b7))
 ggplot(long_sim_data_mod3,aes(x=estimate))+geom_histogram()+geom_vline(aes(xintercept=vl), data=vline.dat,colour='red') +facet_wrap(.~variable,scales = 'free')+theme_bw()
-ggsave('/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/lm_gamma_results1_estimate_dist_inc_corErr0.7_newMethod.png')
+ggsave('/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/lm_canonical_results1_estimate_dist_inc_corErr0.7_newMethod.png')
 
 #=========================================================================================================#
 #=========================================================================================================#
@@ -212,7 +212,7 @@ ggplot(data=res_all,
         strip.text.y = element_text(hjust=0,vjust = 1,angle=180,face="bold"))+
   coord_flip()
 
-ggsave('/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/FASTgls_gamma_results1_estimate_boot CI_inc_corErr0.7_newMethod.png')
+ggsave('/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/FASTgls_canonical_results1_estimate_boot CI_inc_corErr0.7_newMethod.png')
 
 #ggplot(sim_data,aes(x=t,y=y))+geom_point(colour='grey')+theme_bw()+theme(legend.position = 'top') + geom_line(aes(y=predict(mod1),x=t,colour=signal))+ geom_line(aes(y=predict(mod2),x=t,colour=signal),linetype='dashed')
 
