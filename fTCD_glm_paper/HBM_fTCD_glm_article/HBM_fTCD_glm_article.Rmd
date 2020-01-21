@@ -1,0 +1,624 @@
+---
+title: A General Statistical Analysis for quantifying laterality using functional Transcranial Doppler Ultrasound
+author:
+- name: Paul A. Thompson
+  num: a
+- name: Dorothy V.M. Bishop
+  num: a
+- name: Kate E. Watkins
+  num: a
+- name: Zoe V.J. Woodhead*
+  num: a
+address:
+- num: a
+  org: Department of Experimental Psychology, Anna Watts Building, Radcliffe Observatory Quarter, Woodstock Road, Oxford, OX2 6GG, UK.
+corres: "*Zoe Woodhead, Department of Experimental Psychology, Anna Watts Building, Radcliffe Observatory Quarter, Woodstock Road, Oxford, OX2 6GG, UK. \\email{zoe.woodhead@psy.ox.ac.uk}"
+presentaddress: Department of Experimental Psychology, Anna Watts Building, Radcliffe Observatory Quarter, Woodstock Road, Oxford, OX2 6GG, UK.
+authormark: Thompson \emph{et al}.
+articletype: Research article
+received: 2020-01-31
+revised: 2020-01-31
+accepted: 2020-01-31
+abstract: "We propose a method to bring analysis of functional laterality using transcranial Doppler ultrasound data in line with modern statistical methods typically used in fMRI. The method modifies the best practice analyses used in fMRI to allow a greater degree of accuracy and sensitivity to fTCD analysis, and increases flexibility to analyse more complex designs that are currently beyond the scope of fTCD. The method has two main implementations including the general linear modelling framework using generalised least squares to allow for temporal autocorrelation, and secondly, consideration of the haemodynamic response function at the subject-specific level."
+keywords: General Linear Model; fTCD; fMRI; Laterality; Generalised Least Squares; Nonlinear regression.
+bibliography: bibfile.bib
+header-includes: |
+  \usepackage{hyperref}
+  \usepackage[utf8]{inputenc}
+  \def\tightlist{}
+  \usepackage{amsmath}
+  \usepackage{float}
+  \floatplacement{figure}{H}
+output: 
+  WileyHBMtemplate::hbm_fun
+---
+
+```{r setup, include=FALSE,message=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(minpack.lm)
+
+```
+
+# Introduction
+
+Lateralisation of brain activity (functional lateralisation) is most commonly measured using fMRI, which benefits from high spatial resolution, flexible experimental designs and well established analysis procedures. Functional transcranial Doppler sonography (fTCD) is less widely used, but has a number of practical advantages over fMRI, such as lower cost, better portability, fewer contraindications and less sensitivity to head motion. While fMRI is often considered the 'gold standard' in functional laterality research, the practical advantages of fTCD make it preferable for large-scale exploratory studies, studies involving special populations such as children, or studies involving speech production. Both modalities quantify functional lateralisation using a laterality index (LI), but the analytical approach used to calculate LI differs greatly between the two. This document explores whether the general linear modelling (GLM) approach used in fMRI may be applied to fTCD data, with the goals of harmonising the two modalities (making it easier to compare results from fMRI and fTCD studies directly), and increasing analytical flexibility in fTCD over and above what is possible with the current methods.
+
+A basic description of fTCD and its similarities and differences to fMRI are presented below. (For more comprehensive details [@Badcock2017; @Bishop2010; @Deppe2004; @Deppe2004a; @Lupetin1995]).
+
+## Physiological Basis
+FTCD uses ultrasound probes to detect changes in cerebral blood flow velocity (CBFV) in response to a task or stimulus. The change in CBFV (relative to a resting baseline) is used as a proxy measure for brain activity. Most commonly, CBFV is recorded from the middle cerebral artery (MCA), which has good coverage of lateral temporal, frontal and inferior parietal cortical areas (Figure 1); but it is also possible to record from other cerebral arteries. By comparison, fMRI detects the changes in blood oxygenation levels (the blood oxygen level dependent [BOLD] response). The two methods are similar, therefore, in that they both use indirect measures of brain activity that rely on neurovascular coupling, but whereas fTCD taps perfusion over a widespread (arterial) territory, fMRI detects local changes (i.e. at the spatial scale of individual voxels).
+
+** INSERT FIGURE 1 HERE**
+
+![Approximation of the MCA territory (red) based on lesion extents in 1160 acute stroke patients. Reproduced from [@Kim2019].](Kim_2019_MCA.png){width=50%, height=50%}
+
+As arterial blood flow and local blood oxygenation are tightly coupled, it is anticipated that they should show similar time courses in their response to brain activity [@Buxton1998; @Gagnon2015]. The time course of the BOLD response following a brief experimental stimulus (known as an impulse response) has been well characterised [e.g. @Boynton1996; @Glover1999]. It increases reach a peak at around 6 seconds post-stimulus, then declines dropping below baseline levels to reach the trough of the undershoot at around 16 seconds, before gradually returning to resting levels. This shape can be closely approximated by a combination of two gamma functions, one modelling the initial peak and one modelling the undershoot [@Friston1998]. The precise shape of the response is likely to differ for different individuals and brain regions; furthermore, the double gamma function may be insufficient for modelling sustained neural responses to more complex tasks [@Henson2004].
+
+The time course of the response in fTCD is less well characterised. Recordings with fTCD of the posterior cerebral artery's CBFV in response to prolongued visual stimulation [@Aaslid1987; @Conrad1989] show that (similar to fMRI) the response peaks within four to five seconds. Both studies reported adaptation of CBFV during the prolonged stimulation (i.e. a slow decline in CBFV). Conrad and colleagues reported a brief 'off-reaction' (an increase in blood flow) at stimulus offset; and after a 20 second stimulus, Aaslid and colleagues reported that CBFV returned to baseline levels around 6 seconds after stimulus offset. Conrad and colleagues reported an undershoot effect after stimulus offset, similar to that seen in fMRI. Our own investigations with fTCD (Figure 1) that using a 2 second hand movement task (N=1) demonstrated an impulse response similar to that seen in fMRI, with an intial peak at ~4 seconds, and an undershoot which resolved to baseline levels by around 15 seconds. When a 10 second stimulus was used, the response continued to build until a peak at around ~5 seconds, then there was adaptation in the response during the remainder of the task. After task cessation, the signal dropped to baseline by 20 seconds, followed by an undershoot. We infer from this preliminary data that the responses observed in fTCD are likely to have a similar shape to those in fMRI, but that the time to peak and to return to baseline may be slightly faster.
+
+** INSERT FIGURE 2 HERE**
+
+```{r ftcd_response, echo=FALSE, message=FALSE, warning=FALSE, fig.width=5, fig.height=4, fig.cap='Example fTCD responses from the left hemisphere (dark grey) and the right hemisphere (light grey) to a 2 second (top) and 10 second (bottom) movement task using the left hand (N=1, averaged over multiple trials).'}
+
+# mydatafile_2sec <- paste0('/Users/paulthompson/Dropbox/fTCD_GLM/data/Averaged_BS_LH_2sec.csv')
+# mydatafile_10sec <- paste0('/Users/paulthompson/Dropbox/fTCD_GLM/data/Averaged_BS_LH_10sec.csv')
+
+mydatafile_2sec <- paste0('/Users/paulthompson/Dropbox/fTCD_GLM/data/Averaged_BS_LH_2sec.csv')
+mydatafile_10sec <- paste0('/Users/paulthompson/Dropbox/fTCD_GLM/data/Averaged_BS_LH_10sec.csv')
+
+mydata_2 <- read.csv(mydatafile_2sec)
+mydata_10 <- read.csv(mydatafile_10sec)
+
+mylongdata_2<-gather(mydata_2[,c('time','Lmean','Rmean')],"signal","Mean_blood_flow",Lmean:Rmean)
+mylongdata_10<-gather(mydata_10[,c('time','Lmean','Rmean')],"signal","Mean_blood_flow",Lmean:Rmean)
+
+mylongdata_2$stim <- '2 second stimulus'
+mylongdata_10$stim <- '10 second stimulus' 
+mylongdata <- rbind(mylongdata_2, mylongdata_10)
+mylongdata$stim <- factor(mylongdata$stim, levels = c('2 second stimulus', '10 second stimulus'))
+
+# stimulus durations
+durations <- data.frame(stim= c('2 second stimulus', '10 second stimulus'),
+                        duration = c(2, 10))
+# Create plot
+
+ggplot(mylongdata, aes(y=Mean_blood_flow,x=time)) + 
+  facet_grid(rows = vars(stim)) +
+  geom_line(aes(colour=signal)) + 
+  geom_hline(yintercept=100,alpha=0.5) +
+  geom_vline(xintercept = 0,alpha=0.5) +
+  geom_vline(data = durations, aes(xintercept = duration), alpha=0.5, linetype="dashed") +
+  theme_bw() + ylab('Normalised CBFV (cm/s)') +xlab('time(s)') + theme(legend.position = 'top')+scale_color_grey(start = 0.3, end = .7)
+
+```
+
+## Measurement
+The goal of fTCD analysis is normally to assess functional lateralisation, i.e. differences between the right and left hemispheres; unlike fMRI, it is not common to measure activation strength per se, i.e. the degree of change in blood flow during task relative to rest. The CBFV recorded in fTCD is measured in meaningful units (cm/s), but the signal amplitude is dependent on both the actual speed of blood flow and the angle of insonation (the position of the ultrasound probe relative to the artery). Positioning of the probe is subject to operator error [@McMahon2007], and some movement of the probe is likely over the course of an experiment. Hence, there is likely to be a difference in the angle of insonation between the hemispheres. The raw recorded values are therefore unreliable on their own, but must be interpreted relative to a baseline condition. 
+
+## Experimental Design
+FTCD studies typically use experimental designs similar to a block design in fMRI. The length of the block is designed to allow the cerebral blood flow in response to the task to reach a plateau and thus maximise the signal to noise ratio. Similarly, sufficient rest time is allowed between blocks to let the cerebral blood flow return to baseline levels. In fTCD, resting baselines are the norm, but the problems with resting baselines have been well documented in the fMRI literature [@Binder2008; @Stark2001]. Stark and Squire observed that activity in areas such as the medial temporal lobe were higher during 'rest' than during alternative active baseline tasks such as odd / even decision tasks. This activity is thought to arise from unconstrained thoughts. Binder and colleagues demonstrated that contrasting a semantic decision task with an active baseline (tone decision) rather than rest revealed stronger left hemisphere activity, presumably because certain left-lateralised semantic processes were engaged by spontaneous thoughts during rest. They observed stronger activations during rest in the medial temporal lobe, but also in left  angular gyrus, left dorsal prefrontal cortex, left orbital frontal cortex, left pars orbitalis, left temporal pole and posterior cingulate gyrus. The same problems with resting baselines are also likely to affect fTCD, as activity in these areas during rest would presumably cause stronger left hemisphere CBFV in the MCA. If the resting baseline CBFV is stronger in the left hemisphere, baseline correction will lead to an underestimation of left lateralisation during the task of interest.
+
+As in fMRI, the block design used in fTCD is efficient in terms of signal detection, but has some known issues. Firstly, some tasks are unsuited to presentation in blocks, for instance, if they relate to infrequent, brief or unpredictable events. Secondly, performing the same task for the length of a block can allow attention to wander, which is particularly a problem for low-level perceptual tasks that are not sufficiently engaging. In fMRI, these problems are typically avoided by using an event-related design, where tasks are presented in individual trials (rather than blocks of trials), with rapid alternation between different tasks of interest. What this type of design lacks in signal to noise ratio, it makes up for in the number of trials that can be presented in a fixed amount of time (**http://imaging.mrc-cbu.cam.ac.uk/imaging/DesignEfficiency**). Such a design may theoretically be possible in fTCD, but has not been attempted to date due to the nature of the data analysis.
+
+## fTCD Data Analysis
+The time series data recorded in fTCD is similar to that of fMRI, but with only one time series per hemisphere (versus than the many voxels per hemisphere in fMRI) and with a higher temporal resolution (fTCD data is acquired at ~100Hz and usually down-sampled for convenience to ~25Hz, whereas fMRI is acquired at approximately one image every 2-3 seconds). However, they are conventionally analysed in very different ways. In fTCD, the time series is epoched into individual trials that are time-locked to stimulus onset, then all trials are averaged to reduce the impact task-irrelevant noise (this is similar to analysis of evoked response potentials in electroencephalography). A functional laterality index (LI) is then computed by simply taking the difference between left CBFV and right CBFV over a user-defined period of interest in this averaged epoch. The fTCD time course is thus reduced to a single number representing the difference between left and right hemispheres. 
+
+In contrast, fMRI uses a general linear modelling (GLM) approach to data analysis [@Worsley_2002]. The time series of blood-oxygen-level dependent (BOLD) signal change in each voxel is analysed separately in a mass univariate analysis. The BOLD signal is entered into the GLM as the dependent variable, with explanatory variables such as the time course of the onset of trials within the experiment (convolved by the expected shape of the haemodynamic response) as the predictors. This tests how well the time course of the task predicts the time course of signal change in the voxel. The output of the GLM is an estimated beta value for each explanatory variable at that voxel. When a resting baseline is used, the significance of the beta for the task of interest is simply converted to a t-statistic to test whether it is significantly greater than zero. Alternatively, when an active baseline is used, a contrast can be performed to comparing the beta for the task of interest to the beta for the baseline task, and again, computing a t-statistic to indicate the strength (and statistical significance) of the difference.
+
+## Aims
+
+The main aim of the paper is to translate the GLM analysis framework used in fMRI for use with fTCD data. The implementation is not straightforward as the data has a few major structural differences, namely: there are only two time series of data (one per hemisphere) rather than one per voxel; and each time series has around 20,000 observations compared to approximately 100 observations in fMRI time series. The secondary aim was to demonstrate that the new analysis method permits a greater range of experimental designs and potential hypotheses to be tested than is currently available. Several examples are given demonstrating the application of the method to novel fTCD experimental designs. 
+
+# Methods
+
+The model development is split into two sections; i) modelling individual-specific haemodynamic response function [@Proulx_2014] in fTCD, and ii) modelling fTCD data using the general linear model framework. We make certain adjustments to the application of the techniques to allow for the different structure of the data between the modalities. More specifically, the fMRI data consists of thousands of shorter time series (one per voxel) per individuals, whereas fTCD only contains two time series (left and right middle cerebral arteries) but the sampling rate is far higher (20,000 unique observations per time series).   
+
+## Modelling the haemodynamic response function
+
+The haemodynamic response function in fMRI research has been comprehensively studied and refined, typically, opting for a choice of canonical, gamma or boxcar functions. Specifically, we have used the fMRI HRF parametrisation presented by Proulx et al.[@Proulx_2014]. More complex modelling using sets of basis functions was proposed by Lindquist [@Lindquist_2009]. We build upon this research and implement two choices of haemodynamic response function in fTCD data, i) canonical (double gamma) function [@Proulx_2014]; and ii) the set of basis functions approach [@Lindquist_2009]. The two approaches can be selected according to the type of stimulus used. A point stimulus that elicits a transient haemodynamic response would be best modelled by the canonical function, whereas a longer task or stimulus with sustained response would use the basis functions approach. 
+
+### Point stimulus: canonical HRF
+
+Increasing the sensitivity of the model using the subject-specific haemodynamic response parametrisation [@Proulx_2014] reduces the false positive rate and provides a greater degree of sensitivity. Each individual's time series data is split by epochs, each containing one trial of the experimental task, then all epochs are averaged to calculate the individual's average haemodynamic response. This is then used to model an individual's specific HRF. Due to the form of the haemodynamic response (double gamma), each individual's HRF data are modelled using a nonlinear regression (i.e. not linear in the parameters rather than the variables). The nonlinear model's parameter estimates can be directly related to specific dimensions of the standard shape of the canonical (double gamma) functional form; see Figure 3 and equations 1-6, reproduced from Proulx et al.[@Proulx_2014]. 
+
+** INSERT FIGURE 3 HERE**
+
+```{r double_gamma_plot,warning=FALSE,message=FALSE,echo=FALSE,fig.width=5,fig.height=4,fig.cap='Typical haemodynamic response function with illustrations of the parameter relationships. Grey line indicates the raw data, the bold black line indicates the modelled response using the canonical haemodynamic response function, and the grey dashed line is a reference baseline to peaks 1 and 2.'}
+time <- seq(0,20,by=0.04)
+
+mycanonicalHRF <- function(t, peak1,peak2,fwhm1,fwhm2,ratio,amp) {
+    
+    A <- 8*log(2)
+    
+    par1 <- A*((peak1^2)/(fwhm1^2))
+    
+    par2 <- (A*(peak2^2))/(fwhm2^2)
+    
+    par3 <- (fwhm1^2)/(A*peak1)
+    
+    par4 <- (fwhm2^2)/(A*peak2)
+    
+    ttpr <- par1 * par3
+    ttpu <- par2 * par4
+    
+    resp <-100 + amp*((t/ttpr)^par1 * exp(-(t - ttpr)/par3) - ratio * (t/ttpu)^par2 * exp(-(t - ttpu)/par4))
+    
+  return(resp)
+  }
+  
+myy<-mycanonicalHRF(t=time,peak1=5.4,peak2=10.8,fwhm1=5.2,fwhm2=7.35,ratio=0.35,amp=5) + rnorm(length(time),0,1)
+
+mydata<-data.frame(y=myy,x=time)
+
+myHRFfit2 <- nlsLM(y~mycanonicalHRF(t=x,peak1,peak2,fwhm1,fwhm2,ratio,amp),data=mydata,start=list(peak1 = 5.4, peak2 = 10.8, fwhm1 = 5.2, fwhm2 = 7.35, ratio = 0.35,amp=5),algorithm = "port", lower=c(.01,.01,.01,.01,0.1,0.01),upper=c(50,50,10,10,2,10))  
+
+myfittedy <- predict(myHRFfit2,seq(0,20,by=0.04))
+ypeak1 <- max(myfittedy)  
+ypeak2 <- min(myfittedy)
+#arrow data
+  
+arrow.data<-data.frame(
+  x = c(5.4, 5.4, #amp arrow
+        12, 12, #amp x ratio arrow
+        0, 5.3, #peak 1 arrow
+        0, 11.9, #peak 2 arrow
+        5.4-2, 5.4+2, #fwhm1 arrow
+        12-1.5, 12+3), #fwhm2 arrow
+  x.end=c(5.4, 5.4, # amp arrow
+          12, 12, #amp x ratio arrow
+          5.3, 0, #peak 1 arrow
+          11.9, 0, #peak 2 arrow
+          5.4+2, 5.4-2, #fwhm1 arrow
+          12+3, 12-1.5), #fwhm2 arrow
+  y = c(100, ypeak1, #amp arrow
+        100, ypeak2, #amp x ratio arrow
+        ypeak1, ypeak1, #peak 1 arrow
+        ypeak2, ypeak2, #peak 2 arrow
+        (ypeak1-100)/2+100, (ypeak1-100)/2+100, #fwhm1 arrow
+        (ypeak2-100)/2+100, (ypeak2-100)/2+100), #fwhm2 arrow
+  y.end=c(ypeak1, 100, #amp arrow
+          ypeak2, 100, #amp x ratio arrow
+          ypeak1, ypeak1, #peak 1 arrow
+          ypeak2, ypeak2, #peak 2 arrow
+          (ypeak1-100)/2+100, (ypeak1-100)/2+100, #fwhm1 arrow
+          (ypeak2-100)/2+100, (ypeak2-100)/2+100)) #fwhm2 arrow
+
+ggplot(mydata,aes(y=y,x=x)) + 
+  geom_line(colour="grey", alpha=0.5) + 
+  geom_hline(yintercept=100,alpha=0.5,linetype="dashed") + theme_bw() +
+  geom_segment(data = arrow.data, aes(x=x, xend=x.end, y=y, yend=y.end), size = 0.5, arrow = arrow(length = unit(0.2, "cm")), colour = 'blue') + 
+  geom_line(data=data.frame(y=myfittedy,x=seq(0,20,by=0.04)),aes(y=y,x=x)) +
+  annotate('text', x = 5.4/2, y = ypeak1+0.5, label="peak1", colour = 'blue') + 
+  annotate('text', x = 12/2, y = ypeak2-0.5, label="peak2", colour = 'blue') + 
+  annotate('text', x = 6.4, y = 101.5, label="amp", colour = 'blue') + 
+  annotate('text', x = 5.6, y = 102.8, label="fwhm1", colour = 'blue') + 
+  annotate('text', x = 13.7, y = 99, label="fwhm2", colour = 'blue') +
+  annotate('text', x = 12, y = 100.4, label="amp x ratio", colour = 'blue') +
+  xlab('time(s)') + ylab('Normalised CBFV (cm/s)')
+```
+
+
+The canonical HRF is the difference between two gamma density functions, $\gamma$ and its magnitude is weighted by an amplitude parameter $amp$,
+
+\begin{align}
+HRF(t) = amp \times [\gamma_{1}(t) - ratio\times \gamma_{2}(t)]
+\end{align}
+
+where $t$ is the repeated observations across time, $ratio$ is an adjustment parameter to scale $\gamma_{2}$ in relation to $\gamma_{1}$. The standard gamma function $\gamma$ has the following form,
+
+\begin{align}
+\gamma_{k}(t) = \left( \frac{t}{peak_{k}} \right)^{a_{k}}\times \exp^{-\left(\frac{t-peak_{k}}{b_{k}}\right)}, \quad\quad\quad k=1,2.
+\end{align}
+
+The parameters $b_{k}$ and $a_{k}$ can be rewritten to correspond to quantities from Figure 3,    
+
+\begin{align}
+a_{1}&=8log(2)\times\frac{peak_{1}^{2}}{fwhm_{1}^{2}},\nonumber\\
+b_{1}&=\frac{fwhm_{1}^{2}}{8log(2)\times peak_{1}},\nonumber\\
+a_{2}&=\frac{8log(2)\times peak_{2}^{2}}{fwhm_{2}^{2}},\nonumber\\
+b_{2}&=\frac{fwhm_{2}^{2}}{8log(2)\times peak_{2}}.
+\end{align}
+
+The nonlinear model is fitted using nonlinear least squares which is an iterative procedure. Least squares requires the minimisation of the sum of squares for both standard linear regression and its non-linear counterpart. However, nonlinear least squares often has a problem that there can potentially be multiple minima and therefore, multiple potentially unique solutions. The nonlinear least squares has various algorithms available, but here we use the Levenberg–Marquardt algorithm. This algorithm overcomes the minimisation complication by using starting values. Conditional on the starting values, the Levenberg-Marquardt algorithm should only converge on a global minimum given that it is in close proximity to the starting values [@Draper_1998]. This ensures that the iterative procedure does not converge on a non-optimal solution or outside reasonable parameter limits.
+
+
+The choice of starting values for model parameters, $peak_{1}$, $peak_{2}$, $fwhm_{1}$, $fwhm_{2}$, $amp$, $ratio$ are approximated either from estimates or visually examining the data averaged across all individuals' epoched data (see Table 1 for details). 
+
+
+\begin{table}[h!]
+\centering
+\caption{Parameter's initial value descriptions }
+\begin{tabular}{|p{3cm}|p{12cm}|}
+\hline
+Parameter & Description \\ \hline
+$peak_{1}$ & Estimated for each individual by extracting the time corresponding to the maximum of the mean blood flow (averaged between the two time series across both left and right sensors across all trials) within the window of stimuli activation. \\ \hline
+$peak_{2}$ & Estimated for each individual by extracting the time corresponding to the minimum of the mean blood flow (averaged between the two time series across both left and right sensors across all trials) within the window of stimuli activation. \\ \hline
+$fwhm_{k},~k=1,2$ & Given the starting value 5 \\ \hline
+$amp$ & Estimated by the maximum of the mean blood flow (averaged between the two time series across both left and right sensors across all trials) within the window of stimuli activation \\ \hline
+$ratio$ & The ratio of the magnitude of the mean blood flow (averaged between the two time series across both left and right sensors across all trials) between peak 1 and peak 2 \\ \hline
+\end{tabular}
+\end{table}
+
+
+### Sustained stimulus: basis functions
+
+Our second approach to mapping the haemodynamic response function is tailored to allow for a sustained response to experimental stimulus. More specifically, if the task at each repetition contains multiple responses, then we observed through experimental data that the haemodynamic response plateaus at a saturation point until the end of the task period where it drops off as usually observed in point stimulus tasks. Figure 4 shows an example of an fTCD response to sustained response stimulus. The blood flow surges as usual, but the peaks and is sustained to maintain blood flow volume for the duration of the sustained response. The typical HRF do not fit this sustained response, so we need to use a non-parametric function to track the time series of blood flow response.
+
+** INSERT FIGURE 4 HERE**
+
+```{r sustained,echo=FALSE,message=FALSE,warning=FALSE,fig.width=5,fig.height=4,fig.cap='Example haemodynamic response data from one individual for a sustained response task from the left hemisphere (dark grey) and the right hemisphere (light grey). The purple lines in each panel are the model fits using canonical HRF (bottom) and basis functions (top). The grey, vertical dashed lines indicate the start and end of the task stimulus.'}
+
+#mydatafile <- paste0('/Users/paulthompson/Dropbox/fTCD_GLM/data/Averaged_BS_LH_10sec.csv')
+
+mydatafile <- paste0('/Users/paulthompson/Dropbox/fTCD_GLM/data/Averaged_BS_LH_10sec.csv')
+mydata2 <- read.csv(mydatafile)
+
+mylongdata<-gather(mydata2[,c('time','Lmean','Rmean')],"signal","Mean_blood_flow",Lmean:Rmean)
+
+#---------------------------------------------------------------------------#
+# canonical function with parameter setup from:  https://doi.org/10.1016/j.neuroimage.2014.02.018
+
+  mycanonicalHRF <- function(t, peak1,peak2,fwhm1,fwhm2,ratio,amp) {
+    
+    A <- 8*log(2)
+    
+    par1 <- A*((peak1^2)/(fwhm1^2))
+    
+    par2 <- (A*(peak2^2))/(fwhm2^2)
+    
+    par3 <- (fwhm1^2)/(A*peak1)
+    
+    par4 <- (fwhm2^2)/(A*peak2)
+    
+    ttpr <- par1 * par3
+    ttpu <- par2 * par4
+    
+    resp <-100 + amp*((t/ttpr)^par1 * exp(-(t - ttpr)/par3) - ratio * (t/ttpu)^par2 * exp(-(t - ttpu)/par4))
+    
+  return(resp)
+  }
+  
+  library(fda)
+
+mybasis<-function(x,y)
+{
+  
+  ovibasis = create.fourier.basis(rangeval = range(x),nbasis = 10)
+  
+  ovifourier.fd = smooth.basis(argvals = x, y = y,fdParobj = ovibasis)$fd
+  
+  ovi = eval.fd(x,ovifourier.fd)
+  
+  return(ovi)
+}
+ 
+  # create mean value between the Left and Right signals, so that the HRF is not over estimated.
+  mydata2$mean<-rowMeans(mydata2[,c('Lmean','Rmean')])
+  
+  #manuallyset according to the stimuli start and end. Follwoing Zoe.W doppler script.
+  timewindow1 <- 0
+  timewindow2 <- 25
+  
+  #Automate the selection of starting values
+  startamp <- max(mydata2[mydata2$time>=timewindow1 & mydata2$time<=timewindow2,'mean'])-100
+  startpeak1 <- mydata2[mydata2$time>=timewindow1 & mydata2$time<=timewindow2,'time'][which(mydata2[mydata2$time>=timewindow1 & mydata2$time<=timewindow2,'mean']==max(mydata2[mydata2$time>=timewindow1 & mydata2$time<=timewindow2,'mean']))[1]]
+  startpeak2 <- mydata2[mydata2$time>=timewindow1 & mydata2$time<=timewindow2,'time'][which(mydata2[mydata2$time>=timewindow1 & mydata2$time<=timewindow2,'mean']==min(mydata2[mydata2$time>=timewindow1 & mydata2$time<=timewindow2,'mean']))[1]]
+startratio<-(min(mydata2[mydata2$time>=timewindow1 & mydata2$time<=timewindow2,'mean'])[1])/(max(mydata2[mydata2$time>=timewindow1 & mydata2$time<=timewindow2,'mean'])[1])
+  
+  # Fits a nonlinear modelling according to the model precedent set out in Proulx et al.(2014)
+  myHRFfit <- nlsLM(Mean_blood_flow~mycanonicalHRF(t=time,peak1,peak2,fwhm1,fwhm2,ratio,amp),data=mylongdata[mylongdata$time>=timewindow1 & mylongdata$time<=timewindow2,c(1,3)],start=list(peak1 = startpeak1, peak2 = startpeak2, fwhm1 = 5, fwhm2 = 5, ratio = startratio,amp=startamp),algorithm = "LM", lower=c(.01,.01,.01,.01,0.1,0.01),upper=c(50,50,10,10,2,10))
+  
+  #plot canonical function fit to real data.
+  
+  mylongdata2<-rbind(mylongdata,mylongdata)
+  mylongdata2$fit<-rep(c('Canonical','Basis Functions'),each=length(mylongdata[,1]))
+  
+  canon_data<-data.frame(y=predict(myHRFfit,seq(timewindow1,timewindow2,by=0.04)),x=seq(timewindow1,timewindow2,by=0.04))
+  
+  basis_data<-data.frame(y=mybasis(y=mylongdata$Mean_blood_flow[mylongdata$time>=timewindow1 & mylongdata$time<=timewindow2],x=mylongdata$time[mylongdata$time>=timewindow1 & mylongdata$time<=timewindow2]),x=mylongdata$time[mylongdata$time>=timewindow1 & mylongdata$time<=timewindow2])
+  
+  fitdata<-rbind(canon_data,basis_data)
+  
+  fitdata$fit<-rep(c('Canonical','Basis Functions'), each=1252)
+  
+  # ggplot(mylongdata,aes(y=Mean_blood_flow,x=time))+geom_line(aes(colour=signal))+geom_hline(yintercept=100,alpha=0.5)+geom_vline(xintercept = c(timewindow1,timewindow2),linetype='dashed',alpha=0.5)+theme_bw()+ geom_line(data=data.frame(y=predict(myHRFfit,seq(timewindow1,timewindow2,by=0.04)),x=seq(timewindow1,timewindow2,by=0.04)),aes(y=y,x=x),colour="purple")+theme(legend.position = 'top') + ylab('Normalised CBFV (cm/s)') + xlab('time(s)')
+  # 
+  # 
+#    ggplot(mylongdata,aes(y=Mean_blood_flow,x=time))+geom_line(aes(colour=signal))+geom_hline(yintercept=100,alpha=0.5)+geom_vline(xintercept = c(0,2),linetype='dashed',alpha=0.5)+theme_bw()+ geom_line(data=data.frame(y=mybasis(y=mylongdata$Mean_blood_flow[mylongdata$time>=timewindow1 & mylongdata$time<=timewindow2],x=mylongdata$time[mylongdata$time>=timewindow1 & mylongdata$time<=timewindow2]),x=mylongdata$time[mylongdata$time>=timewindow1 & mylongdata$time<=timewindow2]),aes(y=y,x=x),colour="purple")
+  
+   
+    ggplot(mylongdata2,aes(y=Mean_blood_flow,x=time))+geom_line(aes(colour=signal))+geom_hline(yintercept=100,alpha=0.5)+geom_vline(xintercept = c(timewindow1,timewindow2),linetype='dashed',alpha=0.5)+theme_bw()+facet_grid(fit~.)+ geom_line(data=fitdata,aes(y=y,x=x),colour="purple")+theme(legend.position = 'top') + ylab('Normalised CBFV (cm/s)') + xlab('time(s)')+scale_color_grey(start = 0.3, end = .7)
+   
+  
+  #ggsave(filename='/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/fTCD_glm_paper/sustained_blood_flow_HRF.png',dpi='print')
+  #---------------------------------------------------------------------------#
+  
+```
+
+
+The set of basis functions are constructed following the method described by Lindquist [@Lindquist_2009]. Basis functions are used in non-parametric regression and are an extension to parametric regression. Typically, parametric linear regression will model an outcome measure, $y$, against some linear combination of regressors, $\mathbf{X\beta}$. The linear combination can be written as follows: 
+
+\begin{align}
+g(x) = \mathbf{X\beta}
+\end{align}
+
+where $\mathbf{\beta}$ are the vector of unknown parameter estimates corresponding to the elements in the design matrix, $X$. We can specify an alternative non-parametric formulation using the basis functions approach [@Lindquist_2009], 
+
+\begin{align}
+g(x) = \sum_{j} \delta_{j}\beta_{j}(x)
+\end{align}
+
+where $\delta_{j}$ are the corresponding set of basis functions.
+ 
+## General linear modelling 
+
+As previously discussed, fMRI analysis typically uses the general linear model framework to model fMRI time series data [@Worsley_2002; @Lindquist_2008]. This framework is adopted here, specifically using generalised least squares to estimate the parameters and account for temporal autocorrelation of the residuals, i.e. serial observations of blood flow from the middle cerebral arteries from each individual. We begin with a definition of ordinary least squares, then discuss the adaptation to the residuals structure of generalised least squares. 
+
+### Least Squares fitting
+
+Least squares is the default method in regression that finds the best fit of a regression line to the data. Specifically, least squares estimates some set of values for the parameters that minimise the sum of the squared deviations between the observed data and their expected values. If we consider the standard linear model,
+
+\begin{align}
+\mathbf{y = X\beta +\epsilon}
+\end{align}
+
+
+where $\mathbf{y}$ is the vector of responses or outcomes, $\mathbf{X}$ is called the design matrix and corresponds to an $n \times p$ matrix with $p$ parameters in the regression, $\mathbf{\beta}$ is a vector of $p$ model parameters, and $\epsilon$ is a vector of residuals or errors. The model parameters are estimated by ordinary-least squares (OLS [@Draper_1998]) as follows: 
+
+\begin{align}
+\mathbf{\hat{\beta}} = (\mathbf{X}^{'}\mathbf{X})^{-1}\mathbf{X}^{'}\mathbf{y}
+\end{align}
+
+
+with covariance matrix,
+
+\begin{align}
+Var(\mathbf{\hat{\beta}}) = \sigma^{2}(\mathbf{X}^{'}\mathbf{X})^{-1}
+\end{align}
+
+We make the assumption in ordinary-least squares that errors are independent and have the same variance,
+
+\begin{align}
+\epsilon_{ols} \sim N(\mathbf{0},\sigma^{2}\mathbf{I})
+\end{align}
+
+where $\sigma^{2}$ is the error variance, and $\mathbf{I}$ is the identity matrix. Therefore, the covariance matrix $\Sigma_{ols} = \sigma^{2}\mathbf{I}$ can be expanded,
+\begin{align}
+\Sigma_{ols} = \sigma^{2}\mathbf{I} = \left(\begin{array}{cccc} 
+\sigma^{2} & 0 & \ldots & 0\\
+0 & \sigma^{2}&  & \vdots\\
+\vdots &  & \ddots& \vdots\\
+0 & 0& \ldots & \sigma^{2}\\
+\end{array}\right)
+\end{align}
+
+However, ordinary least squares can introduce bias into the estimates of the variance due to the temporal correlation between estimates being ignored. Generalised least squares adjusts the error structure by introducing an autocorrelated structure,
+
+\begin{align}
+\epsilon_{gls} \sim N(\mathbf{0},\sigma^{2}\mathbf{\rho})
+\end{align}
+
+where $\mathbf{\rho}$ is the correlation matrix defining the lagged correlations between errors. Hence, the resulting covariance matrix is as follows, 
+
+\begin{align}
+\mathbf{\Sigma_{gls}}=\sigma^{2}\mathbf{\rho} = \sigma^{2}\left(\begin{array}{ccccc} 
+1 & \rho_{1} & \rho_{2}& \ldots &  \rho_{n-1}\\
+\rho_{1} & 1 & \rho_{1} & \ldots & \rho_{n-2}\\
+\rho_{2} & \rho_{1} & 1 & \ldots & \rho_{n-3}\\
+\vdots &\vdots  &\vdots & \ddots & \vdots\\
+\rho_{n-1} & \rho_{n-2} & \rho_{n-3} & \ldots & 1\\
+\end{array}\right)
+\end{align}
+
+We make the assumption that the the errors are serially correlated with an autoregressive structure with one lagged period (AR(1)). Therefore, the parameter estimation can be reformulated as,
+
+\begin{align}
+\mathbf{\hat{\beta}} = (\mathbf{X}^{'}\Sigma^{-1}\mathbf{X})^{-1}\mathbf{X}^{'}\Sigma^{-1}\mathbf{y}
+\end{align}
+
+The estimation of the parameters requires computationally intensive linear algebra which is substantially increased when including the huge covariance matrix due to the large number of observations. To alleviate some of the computational load, we down sampled to 10Hz. This permitted the computations to be within a pragmatic time frame while maintaining reasonable parameter accuracy when using the \textbf{gls} function from the \textbf{R} package 'nlme' [@Pinheiro_2019].
+
+
+<!-- to an implementation using the \textbf{C++ Armadillo} linear algebra library via the R packages \textbf{Rcpp} and \textbf{RcppArmadillo}[@Eddelbuettel_2018; @Eddelbuettel_2014]. This substantially reduced computational time for the matrix algebra required to estimate the model parameters. Details of the functions can be found here: **INSERT LINK or ADD APPENDIX**. -->
+
+
+## Extracting laterality and contrasting tasks
+
+Calculating the measured laterality using fTCD is typically assessed by averaging over epoched CBFV data and simply taking the difference between the left and right hemisphere signals across a specific period of interest. This method has some disadvantages including: i) evaluating more complex testing paradigms is difficult or in some cases intractable; ii) accuracy and magnitude of the laterality is assessed without consideration of the uncertainty in the estimates built in; and iii) takes no account of the sensitivity of the haemodynamic response.
+
+The GLM model can remedy these problems simply by using all available observed data rather than relying on averaged data, and building in uncertainty estimation for parameter estimates. The GLM can allow for different designs such as blocking of tasks by the addition of parameters for each task in the GLM. The GLM framework is the same as in fMRI but it differs in that its intended use is for assessing laterality (the difference in signal strength between left and right hemispheres). In fMRI, a GLM is fitted at each voxel. From each model, a single parameter estimate is extracted that related to the effect of interest. The t-statistic for this parameter is then assessed to see if it falls above or below a pre-specified t threshold. If the voxel has a t-statistic that exceeds the threshold, this is taken as a sign of significant voxel activation. The significant t-statistics are collected together for each hemisphere and either summed or counted to give a relative proportion of activity in each hemisphere. This proportion forms the basis of the laterality index and has the benefit of highlighting specific brain regions that activate under certain tasks. 
+
+Our application of the GLM method differs somewhat as we only fit two models per individual (left and right hemispheres), so we cannot calculate the laterality index based on the number of significant t-statistics per hemisphere. However, we can use the substantially greater number of observations per time series to estimate the laterality using an interaction term in the model.
+
+### Measuring laterality using an interaction
+
+Suppose we have a single task experiment assessing laterality of basic motor skills. The GLM can be setup to include
+
+\begin{align}
+y_{i} = \beta_{i,0}+\beta_{i,1}x_{Stim}+\underbrace{\beta_{i,2}x_{Signal}}_\text{hemisphere index}+\underbrace{\beta_{i,3}t+\beta_{i,4}t^{2}+\beta_{i,5}t^{3}}_\text{Drift terms}+\underbrace{\beta_{i,6}(x_{Signal}\times x_{Stim})}_\text{Laterality estimate} +\epsilon_{i}
+\end{align}
+
+where $i$ denotes individual, but does not indicate that this is a multilevel model,instead indicates separate models are fitted for each individual and $Stim$ is the individual specific HRF convolved with stimuli boxcar function as a predictor variable. We also include drift terms, similarly to fMRI GLM, which account for any trends across the repeated measures and a $x_{Signal}$ main effect which indicates whether the measurements refer to left or right middle cerebral artery signals. Laterality is derived from the magnitude of the interaction between the $x_{Stim}$ and $x_{Signal}$ which gives us an estimate of the difference in $x_{Stim}$ response between the two signals (left and right hemispheres). Lastly, we make the assumption that the error term follows an autocorrelated structure (specifically AR(1) following from equation 14), and we also assume that $x_{Signal}$ is a fixed effect rather than random effect despite the dependence as we cannot accurately estimate the variance with only two levels [@Gelman_2007].
+
+The addition of the autoregressive residual structure increases the computational time considerably, and we have made some headway to improving this using more efficient computation linear algebra in \textbf{C++}. However, Mumford \& Nichols [@Mumford_2006; @Mumford_2009] show that parameter estimates from the GLM using ordinary least squares are unbiased. Using ordinary least squares assumes an independent error structure and reduces the computation load to a reasonable and pragmatic level. However, we must note that the estimate of the standard errors is likely to inaccurate and potentially over or underestimated.
+
+
+### Task contrasts using interactions
+
+The GLM framework has the added benefit that is can incorporate multiple tasks into the model and test a specific hypothesis. Using a contrast in the GLM allow us to test whether one task is more lateralised than the other. We can estimate the contrast directly by reformulating the model (see Koh et al. [@Koh_2017] for details).     
+
+
+Suppose we have a hypothesis looking to test whether one task is more lateralised than the other. Specifically, we need to test whether our interaction between Stimulus 1 ($x_{1}$) and Signal($S$) is bigger than the interaction between Stimulus 2 ($x_{2}$) and Signal($S$). We can write this more formally as,
+
+\begin{align}
+H_{0}: x_{1}.S = x_{2}.S \nonumber\\
+H_{1}: x_{1}.S > x_{2}.S
+\end{align}
+
+If we now take the model formulation (equation 17),
+
+\begin{align}
+y_{i} &= \beta_{i,0}+\beta_{i,1}x_{1}+\beta_{i,2}x_{2}+\beta_{i,3}S+\beta_{i,4}t+\beta_{i,5}t^{2}+\beta_{i,6}t^{3}+\beta_{i,7}(x_{1}.S) +\beta_{i,8}(x_{2}.S)+\epsilon_{i}\nonumber \\
+&= \beta_{i,0}+\beta_{i,1}x_{1}+\beta_{i,2}x_{2}+\beta_{i,3}S+\beta_{i,4}t+\beta_{i,5}t^{2}+\beta_{i,6}t^{3}+\beta_{i,7}(x_{1}.S + x2.S - x_{2}.S) +\beta_{i,8}(x_{2}.S)+\epsilon_{i}\nonumber \\
+      &= \beta_{i,0}+\beta_{i,1}x_{1}+\beta_{i,2}x_{2}+\beta_{i,3}S+\beta_{i,4}t+\beta_{i,5}t^{2}+\beta_{i,6}t^{3}+\beta_{i,7}(x_{1}.S + x_{2}.S) +\underbrace{(\beta_{i,8}-\beta_{i,7})}_\text{Contrast}(x_{2}.S)+\epsilon_{i}
+\end{align}
+
+The contrast $(\beta_{i,8}-\beta_{i,7})$ is then estimated in the GLM as one parameter and can be interpreted in the usual way for significance to test the hypothesis (18).
+
+### Parametric modulation in fTCD
+
+** INSERT FIGURE 5 HERE**
+
+```{r para_modulation, echo=FALSE, message=FALSE,warning=FALSE,fig.cap='Example of a stimulus trace using parametric modulation. The grey and black lines are the raw  and convolved stimuli signals for the average response, parametric modular and the combined stimuli signal.',fig.width=6,fig.height=5, fig.pos="H"}
+library(tidyverse)
+
+mysignal <- data.frame(y1 = rep(rep(c(2,0),each = 20),16), y3 = rep(rep(c(1,0,2,0,3,0,2,0),each=20),4), time = 1:640)
+
+mysignal$y2 = rep(rep(c(-1,0,0,0,1,0,0,0),each=20),4)
+
+
+mysignal2 <- gather(mysignal,task,y,-time)
+#ggplot(mysignal,aes(y=y2,x=time))+geom_line(color='red')+theme_bw()+ylab('y')
+
+canonicalHRF <- function(t, par = NULL) {
+  ttpr <- par[1] * par[3]
+  ttpu <- par[2] * par[4]
+  (t/ttpr)^par[1] * exp(-(t - ttpr)/par[3]) - par[5] * (t/ttpu)^par[2] * exp(-(t - ttpu)/par[4])
+}
+
+par1 <- c(6, 10, 0.6, 0.6, 0.25)
+
+
+y_hrf=rep(c(canonicalHRF(1:20,par=par1),rep(0,20)),16)
+#y_hrf2=rep(c(canonicalHRF(1:20,par=par1),rep(0,20)),16) 
+
+mysignal$stimulus1 <- convolve(mysignal$y1, rev(y_hrf))/50
+
+mysignal$stimulus3 <- (convolve(mysignal$y3, rev(y_hrf))/100)*(rep(rep(c(1,1,2,1,3,1,2,1),each=20),4))
+
+mysignal$stimulus2 <- mysignal$stimulus3-mysignal$stimulus1
+
+mysignal3<-mysignal[,c(3,5:7)]
+
+mysignal3 <- gather(mysignal3,task,y,-time)
+
+mysignal4<- rbind(mysignal2,mysignal3)
+
+mysignal4$stimulus<-rep(c('Raw','HRF convolved'),each=1920)
+
+mysignal4$task<-dplyr::recode(mysignal4$task,'y1'='Average\n response','y2'='Parametric\n modulator','y3'='Fitted\n response','stimulus1'='Average\n response','stimulus2'='Parametric\n modulator','stimulus3'='Fitted\n response')
+
+ggplot(mysignal4,aes(y=y,x=time,colour=stimulus))+geom_line()+facet_grid(task~.)+theme_bw()+theme(legend.position = 'top') + ylab('Normalised CBFV (cm/s)') + xlab('time(s)')+scale_color_grey(start = 0.3, end = .7)
+
+```
+
+Alternatively, we can use contrast coding when generating our stimulus variables. Changing the contrast coding for stimulus from the default 'treatment' coding can permit investigation of other experimental designs, such as parametric modulation [@Mumford_2015]. For example, let us assume that we have a task that is not just on or off but each trial iteration has a different level or magnitude. Figure 5 shows the example stimulus trace prior to convolving with the hemodynamic response function. 
+
+The GLM can incorporate this design by adding an additional predictor to the model as a parametric modulator. The parametric modulator is assigned contrast weights to the different factor levels of the stimulus, so that when convolved together the fitted response accurately reflects the stepped design allowing for different levels within each stimulus.
+
+\begin{equation}
+\begin{aligned}
+y_{i} = \beta_{i,0}+\beta_{i,1}x_{Stim}+\beta_{i,2}x_{modulator}+\underbrace{\beta_{i,3}x_{Signal}}_\text{hemisphere index}+\underbrace{\beta_{i,4}t+\beta_{i,5}t^{2}+\beta_{i,6}t^{3}}_\text{Drift terms}\\
++\underbrace{\beta_{i,7}(x_{Signal}\times x_{modulator})}_\text{difference in modulation LR} +\epsilon_{i}
+\end{aligned}
+\end{equation}
+
+An estimate laterality is different at different levels of the stimuli can be quantified using an interaction between the parametric modulator and the hemisphere signal variable.
+
+# Simulation study
+
+## Monte Carlo simulations: Testing parameter estimators
+
+The observed fTCD data has a temporally-correlated error structure (i.e. a time series of sequentially collected recordings from an individual) that unless accounted for in the model estimation can, potentially, add increased uncertainty. Three parameter estimation techniques are tested on simulated data to control the test process including: ordinary least squares (OLS) and generalised least squares (GLS; once using nlme::gls() and secondly, an implementation using RCPP and linear algebra in C Armadillo). The second GLS estimator's implementation was motivated by speed of evaluation on larger time series. We present results from simulated data using the single gamma and canonical (double gamma) HRFs. We do not, however, present a simulation for the fitted empirical canonical HRF method as this requires empirical 'real' data to estimate the HRF.  
+
+```{r table-simple, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+require(pander)
+panderOptions('table.split.table', Inf)
+set.caption("Simulated data - linear model parameters")
+my.data <- "
+  Parameter Name       | Value
+  Intercept ($\\beta_{0}$) | 100 
+  Stimulus 1 ($\\beta_{1}$)     |   2.26
+  Stimulus 2 ($\\beta_{2}$)     |    -2.18
+  $Time$ ($\\beta_{3}$)     |    0.00002
+  $Time^{2}$ ($\\beta_{4}$)      |    -0.00000004
+  $Time^{3}$ ($\\beta_{5}$)      |    -0.000000005
+  Signal ($\\beta_{6}$)      |    -0.5
+  $Signal*Stimulus1$ ($\\beta_{7}$)      |    -0.5
+  lag 1 autocorrelation ($\\rho$)      |    0.7"
+df <- read.delim(textConnection(my.data),header=FALSE,sep="|",strip.white=TRUE,stringsAsFactors=FALSE)
+names(df) <- unname(as.list(df[1,])) # put headers on
+df <- df[-1,] # remove first row
+row.names(df)<-NULL
+pander(df, style = 'rmarkdown')
+
+```
+
+Simulated data was generated to have temporally-correlated errors and a specific linear model structure (see Table 2 for model parameters for simulation). Figure 6 shoes an example simulated data set using the Canonical HRF function. The red and green points indicated the different signals from left and right hemispheres respectively.
+
+** INSERT FIGURE 6 HERE**
+
+```{r fig_sim0, echo=FALSE, fig.cap="Figure showing an example of the Canonical HRF simulated data", out.width = '80%'}
+knitr::include_graphics("/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/canonical_sim_plot")
+```
+
+
+The same data was fitted using each model estimator (OLS, GLS-nlme, GLS-Rcpp) and the process was repeated for 100 iterations to provide empirical bootstrap CIs for each set of estimates. The uncertainty for each estimator can be assessed by looking at both how closely the estimates are to the 'true' parameters (black dashed vertical line) and secondly, the magnitudes of the empirical CIs. Figures 7 and 8 show the estimates from two simulations for data with single gamma and canonical (double gamma) respectively.
+
+** INSERT FIGURE 7 AND 8 HERE**
+
+```{r fig_sim1, echo=FALSE, fig.cap="Single Gamma  HRF to generate stimulus", out.width = '60%'}
+knitr::include_graphics("/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/Sim_gamma.png")
+```
+
+
+```{r fig_sim2, echo=FALSE, fig.cap="Canonical HRF to generate stimulus", out.width = '60%'}
+knitr::include_graphics("/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/Sim_canonical.png")
+```
+
+
+
+
+# Empirical examples
+
+## Measuring laterality
+
+Functional transcranial doppler ultrasound can be used as a course approximate measure of neural activity in language-related areas of the brain via the blood flow in the right and left hemispheres' MCAs. In this example application of our implementation of the GLM method for fTCD data, we use data from Bruckett *et al.* [@Bruckert2016] which investigated whether FTCD ultrasonography could reliably assess functional lateralization across different language processes. The data are re-analysed using the GLM based method and laterality estimates from both analysis techniques are compared using correlation.   
+
+## Using contrasts to assess laterality between tests
+
+## Parametric modulation
+
+# Discussion
+
+# Conclusions
+
+Potential benefits of employing a GLM analysis in fTCD:
+
+- More flexible options for study design, e.g. event related designs or parametric modulators
+
+- The possibility of performing contrasts between tasks, e.g. to use active rather than resting baselines
+
+- Biologically plausible modelling of the neurovascular response
+
+- More direct comparability to fMRI analysis methods
+
+
+# Acknowledgement(s) {-}
+
+We would like to thank all individuals who participated in this research. Thanks to Professor Nathalie Tzourio-Mazoyer for kindly providing the task materials on which the sentence generation task was based. We would like to thank Prof. Thomas Nichols for useful discussions on the merits of OLS vs GLS in fMRI analysis. Finally, thanks to Holly Rutherford for assistance with data collection.
+
+# Disclosure statement {-}
+
+No competing interests were disclosed.
+
+# Funding {-}
+
+This work was supported by a European Research Council Advanced Grant [694189] (DVMB, ZW and PT). KW was supported by ... 
+
+*The funders had no role in study design, data collection and analysis, decision to publish, or preparation of the manuscript.*
+
+
+# References

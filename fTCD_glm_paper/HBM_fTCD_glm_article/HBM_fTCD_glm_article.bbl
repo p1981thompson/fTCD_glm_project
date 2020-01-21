@@ -1,0 +1,149 @@
+\begin{thebibliography}{10}
+
+\bibitem{Badcock2017}
+Badcock N.~A., Groen M.~A.. {What can functional Transcranial Doppler
+  Ultrasonography tell us about spoken language understanding?}.  {\it
+  Language, Cognition and Neuroscience. }2017;32(7):818--828.
+
+\bibitem{Bishop2010}
+Bishop Dorothy V.~M., Badcock Nicholas~A, Holt Georgina. {Assessment of
+  cerebral lateralization in children using functional transcranial Doppler
+  ultrasound (fTCD).}.  {\it Journal of Visualized Experiments : JoVE.
+  }2010;(43):e2161.
+
+\bibitem{Deppe2004}
+Deppe M, Ringelstein E.~Bernd, Knecht Stefan. {The investigation of functional
+  brain lateralization by transcranial Doppler sonography}.  {\it NeuroImage.
+  }2004;21(3):1124--1146.
+
+\bibitem{Deppe2004a}
+Deppe M, Knecht Stefan, Lohmann Hubertus, Ringelstein E~Bernd. {A method for
+  the automated assessment of temporal characteristics of functional
+  hemispheric lateralization by transcranial Doppler sonography}.  {\it Journal
+  of Neuroimaging. }2004;14(3):226--30.
+
+\bibitem{Lupetin1995}
+Lupetin A~R, Davis D~A, Beckman I, Dash N. {Transcranial Doppler sonography.
+  Part 1. Principles, technique, and normal appearances.}.  {\it Radiographics.
+  }1995;15(1):179--191.
+
+\bibitem{Kim2019}
+Kim Dong-Eog, Park Jong-Ho, Schellingerhout Dawid, et al. {Mapping the
+  Supratentorial Cerebral Arterial Territories Using 1160 Large Artery
+  Infarcts}.  {\it JAMA Neurology. }2019;76(1):72.
+
+\bibitem{Buxton1998}
+Buxton Richard~B., Wong Eric~C., Frank Lawrence~R.. {Dynamics of blood flow and
+  oxygenation changes during brain activation: The balloon model}.  {\it
+  Magnetic Resonance in Medicine. }1998;39(6):855--864.
+
+\bibitem{Gagnon2015}
+Gagnon Louis, Sakad{\v{z}}i{\'{c}} Sava, Lesage Fr{\'{e}}d{\'{e}}ric, et al.
+  {Quantifying the microvascular origin of bold-fMRI from first principles with
+  two-photon microscopy and an oxygen-sensitive nanoprobe}.  {\it Journal of
+  Neuroscience. }2015;35(8):3663--3675.
+
+\bibitem{Boynton1996}
+Boynton Geoffrey~M., Engel Stephen~A., Glover Gary~H., Heeger David~J.. {Linear
+  systems analysis of functional magnetic resonance imaging in human V1}.  {\it
+  Journal of Neuroscience. }1996;16(13):4207--4221.
+
+\bibitem{Glover1999}
+Glover Gary~H.. {Deconvolution of impulse response in event-related BOLD fMRI}.
+   {\it NeuroImage. }1999;9(4):416--429.
+
+\bibitem{Friston1998}
+Friston K.~J., Fletcher P., Josephs O., Holmes A., Rugg M.~D., Turner R..
+  {Event-related fMRI: Characterizing differential responses}.  {\it
+  NeuroImage. }1998;7(1):30--40.
+
+\bibitem{Henson2004}
+Chapter 40 - Analysis of fMRI Time Series: Linear Time-Invariant Models,
+  Event-Related fMRI, and Optimal Experimental Design.  In:  Frackowiak
+  Richard~S.J., Friston Karl~J., Frith Christopher~D., et al. , eds. {\it Human
+  Brain Function (Second Edition)}, Burlington: Academic Press second
+  edition~ed.2004 (pp. 793 - 822).
+
+\bibitem{Aaslid1987}
+Aaslid Rune. {Visually evoked dynamic blood flow response of the human cerebral
+  circulation}.  {\it Stroke. }1987;18(4):771--775.
+
+\bibitem{Conrad1989}
+Conrad B., Klingelhofer J.. {Dynamics of regional cerebral blood flow for
+  various visual stimuli}.  {\it Experimental Brain Research.
+  }1989;77(2):437--441.
+
+\bibitem{McMahon2007}
+McMahon C.~J., McDermott P., Horsfall D., Selvarajah J.~R., King A.~T., Vail
+  A.. {The reproducibility of transcranial Doppler middle cerebral artery
+  velocity measurements: Implications for clinical practice}.  {\it British
+  Journal of Neurosurgery. }2007;21(1):21--27.
+
+\bibitem{Binder2008}
+Binder Jeffrey~R., Swanson Sara~J., Hammeke Thomas~A., Sabsevitz David~S.. {A
+  comparison of five fMRI protocols for mapping speech comprehension systems}.
+  {\it Epilepsia. }2008;49(12):1980--1997.
+
+\bibitem{Stark2001}
+Stark C~E, Squire Larry~R. {When zero is not zero: the problem of ambiguous
+  baseline conditions in fMRI.}.  {\it Proceedings of the National Academy of
+  Sciences of the United States of America. }2001;98(22):12760--12766.
+
+\bibitem{Worsley_2002}
+Worsley K.J., Liao C.H., Aston J., et al. A General Statistical Analysis for
+  fMRI Data.  {\it NeuroImage. }2002;15(1):1 - 15.
+
+\bibitem{Proulx_2014}
+Proulx Sébastien, Safi-Harb Mouna, LeVan Pierre, An~Dongmei, Watanabe Satsuki,
+  Gotman Jean. Increased sensitivity of fast BOLD fMRI with a subject-specific
+  hemodynamic response function and application to epilepsy.  {\it NeuroImage.
+  }2014;93:59 - 73.
+
+\bibitem{Lindquist_2009}
+Lindquist Martin~A., Loh Ji~Meng, Atlas Lauren~Y., Wager Tor~D.. Modeling the
+  hemodynamic response function in fMRI: Efficiency, bias and mis-modeling.
+  {\it NeuroImage. }2009;45(1, Supplement 1):S187 - S198.
+\newblock Mathematics in Brain Imaging.
+
+\bibitem{Draper_1998}
+Draper N.R., Smith H.. {\it Applied regression analysis}.
+\newblock No.~v. 1 in Wiley series in probability and statistics: Texts and
+  references sectionWiley; 1998.
+
+\bibitem{Lindquist_2008}
+Lindquist Martin~A.. The Statistical Analysis of fMRI Data.  {\it Statistical
+  Science. }2008;23(4):439--464.
+
+\bibitem{Pinheiro_2019}
+Pinheiro Jose, Bates Douglas, DebRoy Saikat, Sarkar Deepayan, {R Core Team} .
+  {nlme}: Linear and Nonlinear Mixed Effects Models2019.
+\newblock R package version 3.1-140.
+
+\bibitem{Gelman_2007}
+Gelman Andrew, Hill Jennifer. {\it Data analysis using regression and
+  multilevel hierarchical models}.
+\newblock New York: Cambridge University Press; 2007.
+
+\bibitem{Mumford_2006}
+{Mumford} J.~A., {Nichols} T.. Modeling and inference of multisubject fMRI
+  data.  {\it IEEE Engineering in Medicine and Biology Magazine.
+  }2006;25(2):42-51.
+
+\bibitem{Mumford_2009}
+Mumford Jeanette~A., Nichols Thomas. Simple group fMRI modeling and inference.
+  {\it NeuroImage. }2009;47(4):1469 - 1475.
+
+\bibitem{Koh_2017}
+Koh Natalie, Lee Adel, McLaughlin PhD, Grabowski Thomas~J, Madhyastha Tara~M.
+  {\it A Tutorial on Modeling fMRI Data using a General Linear Model. } 2017.
+
+\bibitem{Mumford_2015}
+Mumford Jeanette~A., Poline Jean-Baptiste, Poldrack Russell~A..
+  Orthogonalization of Regressors in fMRI Models.  {\it PLOS ONE.
+  }2015;10(4):1-11.
+
+\bibitem{Bruckert2016}
+Bruckert Lisa. {Is language laterality related to language abilities ?}
+\newblock ThesisUniversity of Oxford2016.
+
+\end{thebibliography}
