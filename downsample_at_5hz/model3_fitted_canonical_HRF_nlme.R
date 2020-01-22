@@ -1,9 +1,9 @@
 #---------------------------------------------------------------------------------------------------------------#
 # GLM model (without contrasts) for A2 data (Sentence Generation) - simple stimulus (stim1 and stim2) - both runs
 #
-# Model adapted from standard GLm to have autocorrelated residuals according to Worsley et al. (2002) A general statistical analysis for fMRI data. 
+# Model adapted from standard GLM to have autocorrelated residuals according to Worsley et al. (2002) A general statistical analysis for fMRI data. 
 # Downsampled to 5Hz.
-# Fixed single Gamma HRF
+# Fixed canonical HRF
 # nlme::gls( AR(1)) model 
 
 #---------------------------------------------------------------------------------------------------------------#
@@ -206,10 +206,71 @@ fTCD_glm_A2_AC<-function(path,order)
     
     #---------------------------------------------------------------------------------------------------------------#
     # Save processed file in csv format
-    mynewfile <- paste0(getwd(),"/A2_SG_data/",strsplit(myfile, '*.exp'), '_processed.csv')
+    mynewfile <- paste0('/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project',"/A2_SG_data/",strsplit(myfile, '*.exp'), '_processed.csv')
     #write.csv(rawdata, mynewfile, row.names=F)
     
     #---------------------------------------------------------------------------------------------------------------#
+
+    # Epoch timings
+    epochstart_time   <- -7
+    epochend_time     <- 27
+    epochstart_index  <- epochstart_time * samplingrate
+    epochend_index    <- epochend_time * samplingrate
+    basestart_time    <- -5 # baseline start
+    baseend_time      <- 2 # baseline end
+    basestart_index   <- basestart_time * samplingrate
+    baseend_index    <- baseend_time * samplingrate
+    
+    # myepoched will be the full epoched trial
+    myepoched <- array(0, dim=c(norigmarkers,epochend_index - epochstart_index + 1, 2)) # Set up an empty matrix
+    
+    for(mym in 1:norigmarkers) # for trials
+    { 
+      index1 = origmarkerlist[mym] + epochstart_index # index1 is index of the timepoint at the start of the epoch
+      index2 = origmarkerlist[mym] + epochend_index # index2 is the index of the timepoint at the end of the epoch
+      
+      # If recording started late, the start of the epoch for trial 1 will be beyond the recorded range. 
+      # If this doesn't affect the baseline period (ie, results will be unaffected), then replace with mean
+      if (index1 < 0 & origmarkerlist[mym] + basestart_index > 0){
+        cat("Recording started late. Padding start with zeros", "\n")
+        replacement_mean_left = mean(rawdata[0 : index2, 2]) # Left hemisphere mean
+        replacement_mean_right = mean(rawdata[0 : index2, 3]) # Right hemisphere mean
+        # The epoched data is the heartbeat corrected data (columns 9 and 10 from rawdata)
+        myepoched[mym, ,1] = c(rep(replacement_mean_left,index1*-1+1),rawdata[0:index2,9])
+        myepoched[mym, ,2] = c(rep(replacement_mean_right,index1*-1+1),rawdata[0:index2,10])
+      }
+      
+      if (index1 > 1){
+        myepoched[mym,,1]=rawdata[index1:index2,9] #L side
+        myepoched[mym,,2]=rawdata[index1:index2,10] #R side
+      }
+    }
+    
+    # Baseline correction
+    basepoints=(basestart_index-epochstart_index):(baseend_index-epochstart_index) #all baseline points within epoch
+    
+    for (mym in 1:norigmarkers)
+    {basemeanL=mean(myepoched[mym,basepoints,1]) #last dim is 3, which is HB corrected
+    basemeanR=mean(myepoched[mym,basepoints,2])
+    myepoched[mym,,1]=100+myepoched[mym,,1]-basemeanL #last dim 4 is HB and baseline
+    myepoched[mym,,2]=100+myepoched[mym,,2]-basemeanR
+    }
+    
+    # Average over trials
+    ntime <- dim(myepoched)[2]
+    myepoched_average <- data.frame(
+      "Lmean" <- rep(1, ntime),
+      "Rmean" <- rep(1, ntime),
+      "LRdiff" <- rep(1, ntime))
+    
+    myepoched_average$Lmean <- apply(myepoched[ , , 1], c(2), mean)
+    myepoched_average$Rmean <- apply(myepoched[ , , 2], c(2), mean)
+    myepoched_average$LRdiff <- myepoched_average$Lmean - myepoched_average$Rmean
+    
+    # # Plot myepoched_average
+    myepoched_average$time<-seq(from=epochstart_time, to=epochend_time, by=.2)
+    
+
     
     #---------------------------------------------------------------------------------------------------------------#
     #########################################
@@ -223,13 +284,66 @@ fTCD_glm_A2_AC<-function(path,order)
     #myseq<-seq(1,length(rawdata[,1]),by=25)
     rawdata2<-rawdata#[myseq,]
     
-   
+    
     #---------------------------------------------------------------------------------------------------------------#
     
     # Adapted 'fmri.stimulus' function from the R package 'fmri'. This is a condensed version that only gives option of the gamma HRF and convolves the HRF to the stimli specificied earlier in this script
     
-    fmri.stimulus.PT2<- function(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0)), durations = 375, TR = 1/25,scale=1)
+    fmri.stimulus.PT3 <- function(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0)), durations = 375, TR = 1/25,scale=1,epoch_data=myepoched_average,startend=startend)
     {
+      mylongdata<-gather(epoch_data[,c('time','Lmean','Rmean')],"signal","Mean_blood_flow",Lmean:Rmean)
+      #---------------------------------------------------------------------------#
+      # canonical function with parameter setup from:  https://doi.org/10.1016/j.neuroimage.2014.02.018
+      
+      mycanonicalHRF <- function(t, peak1,peak2,fwhm1,fwhm2,ratio,amp) {
+        
+        A <- 8*log(2)
+        
+        par1 <- A*((peak1^2)/(fwhm1^2))
+        
+        par2 <- (A*(peak2^2))/(fwhm2^2)
+        
+        par3 <- (fwhm1^2)/(A*peak1)
+        
+        par4 <- (fwhm2^2)/(A*peak2)
+        
+        ttpr <- par1 * par3
+        ttpu <- par2 * par4
+        
+        resp <-100 + amp*((t/ttpr)^par1 * exp(-(t - ttpr)/par3) - ratio * (t/ttpu)^par2 * exp(-(t - ttpu)/par4))
+        
+        return(resp)
+      }
+      
+      #---------------------------------------------------------------------------#
+      
+      # Use non-linear regression to fit the double gamma canonical function.
+      
+      library(minpack.lm)
+      
+      # create mean value between the Left and Right signals, so that the HRF is not over estimated.
+      epoch_data$mean<-rowMeans(epoch_data[,c('Lmean','Rmean')])
+      
+      #manuallyset according to the stimuli start and end. Follwoing Zoe.W doppler script.
+      timewindow1 <- startend[1]
+      timewindow2 <- startend[2]
+ 
+      #Automate the selection of starting values
+      startamp <- max(epoch_data[epoch_data$time>=timewindow1 & epoch_data$time<=timewindow2,'mean'])-100
+      startpeak1 <- epoch_data[epoch_data$time>=timewindow1 & epoch_data$time<=timewindow2,'time'][which(epoch_data[epoch_data$time>=timewindow1 & epoch_data$time<=timewindow2,'mean']==max(epoch_data[epoch_data$time>=timewindow1 & epoch_data$time<=timewindow2,'mean']))[1]]
+      startpeak2 <- epoch_data[epoch_data$time>=timewindow1 & epoch_data$time<=timewindow2,'time'][which(epoch_data[epoch_data$time>=timewindow1 & epoch_data$time<=timewindow2,'mean']==min(epoch_data[epoch_data$time>=timewindow1 & epoch_data$time<=timewindow2,'mean']))[1]]
+      startratio<-(min(epoch_data[epoch_data$time>=timewindow1 & epoch_data$time<=timewindow2,'mean'])[1])/(max(epoch_data[epoch_data$time>=timewindow1 & epoch_data$time<=timewindow2,'mean'])[1])
+    
+      nls.lm.control(maxiter = 500)
+      
+      # Fits a nonlinear modelling according to the model precedent set out in Proulx et al.(2014)
+      myHRFfit <- nlsLM(Mean_blood_flow~mycanonicalHRF(t=time,peak1,peak2,fwhm1,fwhm2,ratio,amp),data=mylongdata[mylongdata$time>=timewindow1 & mylongdata$time<=timewindow2,c(1,3)],start=list(peak1 = startpeak1, peak2 = startpeak2, fwhm1 = 5, fwhm2 = 5, ratio = startratio,amp=startamp),algorithm = "LM", lower=c(.01,.01,.01,.01,0.1,0.01), upper=c(50,50,20,20,10,10))
+      
+      #plot canonical function fit to real data.
+
+      print(ggplot(mylongdata,aes(y=Mean_blood_flow,x=time))+geom_line(aes(colour=signal))+geom_hline(yintercept=100,alpha=0.5)+geom_vline(xintercept = c(0,2,17),linetype='dashed',alpha=0.5)+theme_bw()+ geom_line(data=data.frame(y=predict(myHRFfit,time=seq(timewindow1,timewindow2,by=0.2)),x=rep(seq(timewindow1,timewindow2,by=0.2),2)),aes(y=y,x=x),colour="purple"))
+      
+      #---------------------------------------------------------------------------#
       
       onsets <- onsets * TR
       durations <- durations * TR
@@ -241,33 +355,25 @@ fTCD_glm_A2_AC<-function(path,order)
       durations <- rep(durations, no)
       
       stimulus <- rep(0, ceiling(scans))
-      for (i in 1:no) stimulus[onsets[i]:(onsets[i] + durations[i] - 
-                                            1)] <- 1
+      for (i in 1:no) stimulus[onsets[i]:(onsets[i] + durations[i] - 1)] <- 1
       
-      .gammaHRF <- function(t, par = NULL) {
-        th <- 0.242 * par[1]
-        1/(th * factorial(3)) * (t/th)^3 * exp(-t/th)
-      }
-      
-      
-      par <- floor((durations[1]/28)*4)
-      
-      y <- .gammaHRF(0:(durations[1] * scale)/scale, par) 
-      
-      stimulus <-  rcpp_convolve(a=stimulus, b=rev(y))
+      y=predict(myHRFfit,0:(durations[1] * scale)/scale)
+
+      stimulus <- convolve(stimulus, rev(y), type = "open")
       stimulus <- stimulus[unique((scale:scans)%/%(scale^2 * TR)) * scale^2 * TR]/(scale^2 * TR)
       stimulus <- stimulus - mean(stimulus)
+
       return(stimulus)
     }  
     
     #---------------------------------------------------------------------------------------------------------------#
-    #---------------------------------------------------------------------------------------------------------------#
     # Create convolved stimulus function with HRF (applying the new fmri.stimulus.PT2 function above)
+
+    gamma1 = fmri.stimulus.PT3(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1,epoch_data = myepoched_average,startend<-c(3,17))
+
+    gamma2 = fmri.stimulus.PT3(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1,epoch_data = myepoched_average,startend<-c(17,23))
     
-    gamma1 = fmri.stimulus.PT2(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0)), durations = stim1_length_samples, TR = 1,scale=1)
-    
-    gamma2 = fmri.stimulus.PT2(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim2_on)!=0)), durations = stim2_length_samples, TR = 1,scale=1)
-    
+
     #---------------------------------------------------------------------------------------------------------------# 
     # Binds all the stimuli into one matrix to be read into the fmri.design function. THis converts the data into a design matrix and adds in the drift terms according to the order argument specified by the user.
     gamma = as.matrix(cbind(gamma1,gamma2))
@@ -296,8 +402,8 @@ fTCD_glm_A2_AC<-function(path,order)
     #---------------------------------------------------------------------------------------------------------------#
     # Uses autocorrelated errors via gls model. (uses the 'nlme' package to achieve this error structure).
     
-    myfit <- nlme::gls(y~stim1+stim2+t+I(t^2)+I(t^3)+signal+stim1_signal,data=mydata,
-                 correlation=corAR1(form=~t))
+    myfit <- gls(y~stim1+stim2+t+I(t^2)+I(t^3)+signal+stim1_signal,data=mydata,
+                 correlation=corAR1(form=~t|signal))
     
     print(names(myfit$coefficients))
     
@@ -343,46 +449,45 @@ fTCD_glm_A2_AC<-function(path,order)
 #-----------------------------------------------------------------------------------------------------------------------#
 #Set the order
 order=3 #polynomial drift terms (2=quadratic, 3=cubic, etc...)
-pdf(file = 'HRF_signals_plots_A2project_SG_AutoCor_Err_Downsampled5Hz.pdf', onefile = TRUE) #print plots to file.
-my_results_A2_SG_AutoCor_Err_downsampled5Hz<-fTCD_glm_A2_AC(path=paste0(getwd(),'/A2_SG_data'),order=order)
+pdf(file = 'HRF_signals_plots_A2project_SG_AutoCor_Err_Downsampled5Hz_fitted_canonical.pdf', onefile = TRUE) #print plots to file.
+my_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical<-fTCD_glm_A2_AC(path=paste0('/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project','/A2_SG_data'),order=order)
 dev.off()
-my_results_A2_SG_AutoCor_Err_downsampled5Hz<-my_results_A2_SG_AutoCor_Err_downsampled5Hz[complete.cases(my_results_A2_SG_AutoCor_Err_downsampled5Hz), ]
+
+my_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical<-my_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical[complete.cases(my_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical), ]
+
+write.csv(my_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical,'/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/downsample_at_5Hz/my_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical.csv',row.names=FALSE)
 #-----------------------------------------------------------------------------------------------------------------------#
 
-#Exclusions
-
-# exclude_id<-c(paste0('A2_',c('013','031','102','108','120','121','125','129','134','139','141','142'),'_D1'),paste0('A2_',c('013','031','102','108','120','121','125','129','134','139','141','142'),'_D2'))
-
-exclude_id<-c(paste0('A2_',c('013','031','102','108','120','121','125','129','134','139','141','142'),'_D1'))
+exclude_id<-c(paste0('A2_',c('013','031'),'_D1'))
 # 
- my_results_A2_SG_ex_AutoCor_Err_downsampled5Hz <- my_results_A2_SG_AutoCor_Err_downsampled5Hz[!my_results_A2_SG_AutoCor_Err_downsampled5Hz$ID %in% exclude_id,]
+my_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical <- my_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical[!my_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical$ID %in% exclude_id,]
 # 
 # 
 # 
 # #-----------------------------------------------------------------------------------------------------------------------#
 # --------------------------------------------------------------------------------------------------------------#
 # 
- my_results_A2_SG_ex_AutoCor_Err_downsampled5Hz$ID <- substring(my_results_A2_SG_ex_AutoCor_Err_downsampled5Hz$ID,4,6)
+my_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical$ID <- substring(my_results_A2_SG_AutoCor_Err_fit_downsampled5Hz_canonical$ID,4,6)
 # 
 # 
 # #-----------------------------------------------------------------------------------------------------------------------#
 # #load LI based on old doppler analysis method
 # 
- old_res_A2<-read.csv("A2_SG_LI.csv")
+old_res_A2<-read.csv("/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/A2_SG_LI.csv")
 # 
- old_res_A2$ID<-sprintf('%0.3d', old_res_A2$ID)
+old_res_A2$ID<-sprintf('%0.3d', old_res_A2$ID)
 # 
- old_res_A2<-old_res_A2[,1:3]
+old_res_A2<-old_res_A2[,1:3]
 # 
- names(old_res_A2)<-c('ID','LI_SG1','LI_SG2')
+names(old_res_A2)<-c('ID','LI_SG1','LI_SG2')
 # 
- compare_results_A2_SG_AutoCor_Err_downsampled5Hz<-merge(my_results_A2_SG_ex_AutoCor_Err_downsampled5Hz,old_res_A2,by='ID',all.x = T)
+compare_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical<-merge(my_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical,old_res_A2,by='ID',all.x = T)
 # 
 # #-----------------------------------------------------------------------------------------------------------------------#
 # 
 # #-----------------------------------------------------------------------------------------------------------------------#
 # 
 # #Print correlation matrix plots to check association between the old LI and new glm-derived LI measures.
- psych::pairs.panels(compare_results_A2_SG_AutoCor_Err_downsampled5Hz[,c('param8','LI_SG1')],cex.cor=1)
+psych::pairs.panels(compare_results_A2_SG_AutoCor_Err_downsampled5Hz_fit_canonical[,c('param8','LI_SG1')],cex.cor=1)
 # 
 # #-----------------------------------------------------------------------------------------------------------------------#

@@ -1,15 +1,16 @@
 #---------------------------------------------------------------------------------------------------------------#
-# GLM model (without contrasts) for A2 data (Sentence Generation) - simple stimulus (stim1 and stim2) - both runs
+# GLM model (without contrasts) for LISA data (Word Generation) - simple stimulus (stim1 and stim2) - both runs
 #
 # Model adapted from standard GLm to have autocorrelated residuals according to Worsley et al. (2002) A general statistical analysis for fMRI data. 
 # Downsampled to 5Hz.
-# Fixed single Gamma HRF
+# Fixed canonical HRF
 # nlme::gls( AR(1)) model 
 
 #---------------------------------------------------------------------------------------------------------------#
 
 # Created by Paul Thompson and Zoe Woodhead - 17th Oct 2019
-# Edited by Paul Thompson - 25th Nov 2019
+# Edited by Paul Thompson - 26th Nov 2019
+# Edited by Paul Thompson - 17th January 2020
 
 # install required packages for fitting the model.
 
@@ -71,7 +72,7 @@ if(get_data==1)
 #   - saves the parameter estimates to data.frame.
 #
 
-fTCD_glm_A2_AC<-function(path,order)
+fTCD_glm_LISA_AC<-function(path,order)
 {
   # get all files names to be loaded in and preprocessed
   filename1<-list.files(path,pattern = '.exp')
@@ -93,7 +94,7 @@ fTCD_glm_A2_AC<-function(path,order)
   #########################################
   #---------------------------------------------------------------------------------------------------------------#
   
-  for(j in (c(1:(length(filename1)/2)*2)-1)) # skips the second repeated measure (D1 only), only fits for first 35 ids.
+  for(j in 1:length(filename1))
   {
     print(filename1[j])
     
@@ -102,7 +103,7 @@ fTCD_glm_A2_AC<-function(path,order)
     myfile <- filename1[j]
     mydata<-read.table(paste0(path,"/",myfile), skip = 6,  header =FALSE, sep ='\t')
     
-    wantcols = c(2,3,4,9) #sec, L, R,marker #select columns of interest to put in shortdat
+    wantcols = c(2,3,4,7) #sec, L, R,marker #select columns of interest to put in shortdat
     shortdat = data.frame(mydata[,wantcols])
     rawdata = filter(shortdat, row_number() %% 20 == 0) # downsample to 5 Hz by taking every 20th point
     allpts = nrow(rawdata) # total N points in long file
@@ -124,17 +125,17 @@ fTCD_glm_A2_AC<-function(path,order)
     # Stimulus timings: Word Gen starts 5 seconds after marker and continues for 20 seconds (including REPORT phase)
     # Edit: stim1 models covert word generation, which starts 5 seconds after marker and continutes for 15 seconds
     # stim2 models overt word reporting, which starts 20 seconds after marker and continues for 5 seconds
-    stim1_delay_sec <- 3
+    stim1_delay_sec <- 5
     stim1_delay_samples <- stim1_delay_sec * samplingrate
-    stim1_length_sec <- 14
+    stim1_length_sec <- 15
     stim1_length_samples <- stim1_length_sec * samplingrate
     
-    stim2_delay_sec <- 17
+    stim2_delay_sec <- 20
     stim2_delay_samples <- stim2_delay_sec * samplingrate
-    stim2_length_sec <- 6
+    stim2_length_sec <- 5
     stim2_length_samples <- stim2_length_sec * samplingrate
     
-    rest_length_sec <- 10
+    rest_length_sec <- 30
     rest_length_samples <- rest_length_sec * samplingrate
     
     rawdata$stim1_on <- 0
@@ -206,7 +207,7 @@ fTCD_glm_A2_AC<-function(path,order)
     
     #---------------------------------------------------------------------------------------------------------------#
     # Save processed file in csv format
-    mynewfile <- paste0(getwd(),"/A2_SG_data/",strsplit(myfile, '*.exp'), '_processed.csv')
+    #mynewfile <- paste0(getwd(),"/A2_SG_data/",strsplit(myfile, '*.exp'), '_processed.csv')
     #write.csv(rawdata, mynewfile, row.names=F)
     
     #---------------------------------------------------------------------------------------------------------------#
@@ -223,10 +224,10 @@ fTCD_glm_A2_AC<-function(path,order)
     #myseq<-seq(1,length(rawdata[,1]),by=25)
     rawdata2<-rawdata#[myseq,]
     
-   
+    
     #---------------------------------------------------------------------------------------------------------------#
     
-    # Adapted 'fmri.stimulus' function from the R package 'fmri'. This is a condensed version that only gives option of the gamma HRF and convolves the HRF to the stimli specificied earlier in this script
+    # Adapted 'fmri.stimulus' function from the R package 'fmri'. This is a condensed version that only gives option of the canonical HRF and convolves the HRF to the stimli specificied earlier in this script
     
     fmri.stimulus.PT2<- function(scans = dim(rawdata)[1], onsets = c(1,1+which(diff(rawdata$stim1_on)!=0)), durations = 375, TR = 1/25,scale=1)
     {
@@ -244,17 +245,19 @@ fTCD_glm_A2_AC<-function(path,order)
       for (i in 1:no) stimulus[onsets[i]:(onsets[i] + durations[i] - 
                                             1)] <- 1
       
-      .gammaHRF <- function(t, par = NULL) {
-        th <- 0.242 * par[1]
-        1/(th * factorial(3)) * (t/th)^3 * exp(-t/th)
+      .canonicalHRF <- function(t, par = NULL) {
+        ttpr <- par[1] * par[3]
+        ttpu <- par[2] * par[4]
+        (t/ttpr)^par[1] * exp(-(t - ttpr)/par[3]) - par[5] * 
+          (t/ttpu)^par[2] * exp(-(t - ttpu)/par[4])
       }
       
       
-      par <- floor((durations[1]/28)*4)
+      par <- c(6, 12, 0.9, 0.9, 0.35)
       
-      y <- .gammaHRF(0:(durations[1] * scale)/scale, par) 
+      y <- .canonicalHRF(0:(20 * scale)/scale, par)/2.885802
       
-      stimulus <-  rcpp_convolve(a=stimulus, b=rev(y))
+      stimulus <- convolve(stimulus, rev(y), type = "open")
       stimulus <- stimulus[unique((scale:scans)%/%(scale^2 * TR)) * scale^2 * TR]/(scale^2 * TR)
       stimulus <- stimulus - mean(stimulus)
       return(stimulus)
@@ -297,7 +300,7 @@ fTCD_glm_A2_AC<-function(path,order)
     # Uses autocorrelated errors via gls model. (uses the 'nlme' package to achieve this error structure).
     
     myfit <- nlme::gls(y~stim1+stim2+t+I(t^2)+I(t^3)+signal+stim1_signal,data=mydata,
-                 correlation=corAR1(form=~t))
+                       correlation=corAR1(form=~t))
     
     print(names(myfit$coefficients))
     
@@ -343,10 +346,10 @@ fTCD_glm_A2_AC<-function(path,order)
 #-----------------------------------------------------------------------------------------------------------------------#
 #Set the order
 order=3 #polynomial drift terms (2=quadratic, 3=cubic, etc...)
-pdf(file = 'HRF_signals_plots_A2project_SG_AutoCor_Err_Downsampled5Hz.pdf', onefile = TRUE) #print plots to file.
-my_results_A2_SG_AutoCor_Err_downsampled5Hz<-fTCD_glm_A2_AC(path=paste0(getwd(),'/A2_SG_data'),order=order)
+pdf(file = '/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/Chpt4_fTCD_WordGen_rawdata/HRF_signals_plots_LISA_WG_AutoCor_Err_Downsampled5Hz_canonical.pdf', onefile = TRUE) #print plots to file.
+my_results_LISA_WG_AutoCor_Err_downsampled5Hz_canonical<-fTCD_glm_LISA_AC(path='/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/Chpt4_fTCD_WordGen_rawdata',order=order)
 dev.off()
-my_results_A2_SG_AutoCor_Err_downsampled5Hz<-my_results_A2_SG_AutoCor_Err_downsampled5Hz[complete.cases(my_results_A2_SG_AutoCor_Err_downsampled5Hz), ]
+my_results_LISA_WG_AutoCor_Err_downsampled5Hz_canonical<-my_results_LISA_WG_AutoCor_Err_downsampled5Hz_canonical[complete.cases(my_results_LISA_WG_AutoCor_Err_downsampled5Hz_canonical), ]
 #-----------------------------------------------------------------------------------------------------------------------#
 
 #Exclusions
@@ -355,34 +358,50 @@ my_results_A2_SG_AutoCor_Err_downsampled5Hz<-my_results_A2_SG_AutoCor_Err_downsa
 
 exclude_id<-c(paste0('A2_',c('013','031','102','108','120','121','125','129','134','139','141','142'),'_D1'))
 # 
- my_results_A2_SG_ex_AutoCor_Err_downsampled5Hz <- my_results_A2_SG_AutoCor_Err_downsampled5Hz[!my_results_A2_SG_AutoCor_Err_downsampled5Hz$ID %in% exclude_id,]
+my_results_LISA_WG_ex_AutoCor_Err_downsampled5Hz_canonical <- my_results_LISA_WG_AutoCor_Err_downsampled5Hz_canonical[!my_results_LISA_WG_AutoCor_Err_downsampled5Hz_canonical$ID %in% exclude_id,]
 # 
 # 
 # 
 # #-----------------------------------------------------------------------------------------------------------------------#
 # --------------------------------------------------------------------------------------------------------------#
 # 
- my_results_A2_SG_ex_AutoCor_Err_downsampled5Hz$ID <- substring(my_results_A2_SG_ex_AutoCor_Err_downsampled5Hz$ID,4,6)
+my_results_LISA_WG_ex_AutoCor_Err_downsampled5Hz_canonical$ID <- substring(my_results_LISA_WG_ex_AutoCor_Err_downsampled5Hz_canonical$ID,4,6)
 # 
 # 
 # #-----------------------------------------------------------------------------------------------------------------------#
-# #load LI based on old doppler analysis method
-# 
- old_res_A2<-read.csv("A2_SG_LI.csv")
-# 
- old_res_A2$ID<-sprintf('%0.3d', old_res_A2$ID)
-# 
- old_res_A2<-old_res_A2[,1:3]
-# 
- names(old_res_A2)<-c('ID','LI_SG1','LI_SG2')
-# 
- compare_results_A2_SG_AutoCor_Err_downsampled5Hz<-merge(my_results_A2_SG_ex_AutoCor_Err_downsampled5Hz,old_res_A2,by='ID',all.x = T)
-# 
-# #-----------------------------------------------------------------------------------------------------------------------#
-# 
-# #-----------------------------------------------------------------------------------------------------------------------#
-# 
-# #Print correlation matrix plots to check association between the old LI and new glm-derived LI measures.
- psych::pairs.panels(compare_results_A2_SG_AutoCor_Err_downsampled5Hz[,c('param8','LI_SG1')],cex.cor=1)
-# 
-# #-----------------------------------------------------------------------------------------------------------------------#
+library(psych)
+library(tidyverse)
+
+#load LI based on old doppler analysis method
+
+old_res<-read.csv("WordGen_results.csv")
+
+old_res<-old_res %>% rename(ID=Filename)
+
+compare_results<-merge(my_results_LISA_WG_ex_AutoCor_Err_downsampled5Hz_canonical,old_res,by='ID',all.x = T)
+
+#compare_results$New_LI <- ifelse(compare_results$Dparam1>0,)
+
+
+fmri_data <- read.csv('/Volumes/PSYHOME/PSYRES/pthompson/DVMB/bruckett_reanalysis/Chapter5_fMRI_data.csv')
+
+# Identify factors
+factor_variables <- c('group_cat', 'group_lat', 'sex', 'hand_self_report', 'hand_QHP_cat', 'hand_EHI_cat', 
+                      'Old_fTCD_wg_cat', 'Old_fTCD_pptt_cat', 'fTCD_wg_cat', 'fTCD_pptt_cat')
+for (i in 1:length(factor_variables))
+{factor_ind <- str_which(colnames(fmri_data), paste0('^',factor_variables[i]))
+fmri_data[,factor_ind] <- as.factor(fmri_data[,factor_ind])}
+
+# Relabel group_cat and sex factors for clarity
+# NB: group_cat 0=typical; 1=atypical
+# sex 0=male; 1=female
+levels(fmri_data$group_cat) <- c('T', 'A')
+levels(fmri_data$sex) <- c('M', 'F')
+
+
+fmri_data<-fmri_data[,c('ID','fMRI_diff_wg_frontal','fMRI_diff_wg_temporal','fMRI_diff_wg_MCA')]
+
+compare_results2<-merge(compare_results,fmri_data,by='ID')
+
+psych::pairs.panels(compare_results2[,c('fMRI_diff_wg_frontal','fMRI_diff_wg_temporal','fMRI_diff_wg_MCA','LI','Dparam1')])
+
