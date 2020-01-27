@@ -482,52 +482,52 @@ write.csv(my_results_A2_SG_Downsamp10Hz_fixed_canonical,'/Volumes/PSYHOME/PSYRES
 
 dev.off()
 
-# #-----------------------------------------------------------------------------------------------------------------------#
-# 
-# #Exclusions
-# 
-# exclude_id<-c(paste0('A2_',c('013','031','102','108','120','121','125','129','134','139','141','142'),'_D1'),paste0('A2_',c('013','031','102','108','120','121','125','129','134','139','141','142'),'_D2'))
-# 
-# my_results_A2_SG_ex <- my_results_A2_SG[!my_results_A2_SG$ID %in% exclude_id,]
-# 
-# my_results_A2_SG_ex$session<-ifelse(substring(my_results_A2_SG_ex$ID,9,9)==1,'glm_LI_SG1','glm_LI_SG2')
-# 
-# 
-# #-----------------------------------------------------------------------------------------------------------------------#
-# 
-# # Some extra diagnostic plots to show distributions of the parameter estimates for all models (one glm per individual)
-# mylong_results_A2_SG<-gather(my_results_A2_SG_ex,key='param',value='beta',-c(ID,HRF,session))
-# 
-# #names(mylong_results_A2_SG)[2]<-"HRF"
-# 
-# ggplot(mylong_results_A2_SG,aes(x=beta))+geom_density(fill='blue',alpha=0.5)+facet_grid(param~session,scales='free')+theme_bw()
-# 
-# #-----------------------------------------------------------------------------------------------------------------------#
-# 
-# mylong_results_A2_SG$ID <- substring(mylong_results_A2_SG$ID,4,6)
-# 
-# myspread_results_A2_SG<-spread(mylong_results_A2_SG,session,beta)
-# 
-# myspread_results_A2_SG <- myspread_results_A2_SG[myspread_results_A2_SG$param=='param8',]
-# 
-# #-----------------------------------------------------------------------------------------------------------------------#
-# #load LI based on old doppler analysis method
-# 
-# old_res_A2<-read.csv("/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/A2_SG_LI.csv")
-# 
-# old_res_A2$ID<-sprintf('%0.3d', old_res_A2$ID)
-# 
-# old_res_A2<-old_res_A2[,1:3]
-# 
-# names(old_res_A2)<-c('ID','LI_SG1','LI_SG2')
-# 
-# compare_results_A2_SG<-merge(myspread_results_A2_SG,old_res_A2,by='ID',all.x = T)
-# 
-# #-----------------------------------------------------------------------------------------------------------------------#
-# 
-# #-----------------------------------------------------------------------------------------------------------------------#
-# 
-# #Print correlation matrix plots to check association between the old LI and new glm-derived LI measures.
-# psych::pairs.panels(compare_results_A2_SG[,c('glm_LI_SG1','glm_LI_SG2','LI_SG1','LI_SG2')],cex.cor=1)
-# 
-# #-----------------------------------------------------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------------------------------------------------#
+
+#Exclusions
+
+exclude_id<-c(paste0('A2_',c('013','031','102','108','120','121','125','129','134','139','141','142'),'_D1'),paste0('A2_',c('013','031','102','108','120','121','125','129','134','139','141','142'),'_D2'))
+
+my_results_A2_SG_Downsamp10Hz_fixed_canonical_ex <- my_results_A2_SG_Downsamp10Hz_fixed_canonical[!my_results_A2_SG_Downsamp10Hz_fixed_canonical$ID %in% exclude_id,]
+
+my_results_A2_SG_Downsamp10Hz_fixed_canonical_ex$session<-ifelse(substring(my_results_A2_SG_Downsamp10Hz_fixed_canonical_ex$ID,9,9)==1,'glm_LI_SG1','glm_LI_SG2')
+
+
+#-----------------------------------------------------------------------------------------------------------------------#
+
+# Some extra diagnostic plots to show distributions of the parameter estimates for all models (one glm per individual)
+mylong_results_A2_SG<-gather(my_results_A2_SG_Downsamp10Hz_fixed_canonical_ex,key='param',value='beta',-c(ID,HRF,session))
+
+#names(mylong_results_A2_SG)[2]<-"HRF"
+
+ggplot(mylong_results_A2_SG,aes(x=beta))+geom_density(fill='blue',alpha=0.5)+facet_grid(param~session,scales='free')+theme_bw()
+
+#-----------------------------------------------------------------------------------------------------------------------#
+
+mylong_results_A2_SG$ID <- substring(mylong_results_A2_SG$ID,4,6)
+
+myspread_results_A2_SG<-spread(mylong_results_A2_SG,session,beta)
+
+myspread_results_A2_SG <- myspread_results_A2_SG[myspread_results_A2_SG$param=='param8',]
+
+#-----------------------------------------------------------------------------------------------------------------------#
+#load LI based on old doppler analysis method
+
+old_res_A2<-read.csv("/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/A2_SG_LI.csv")
+
+old_res_A2$ID<-sprintf('%0.3d', old_res_A2$ID)
+
+old_res_A2<-old_res_A2[,1:3]
+
+names(old_res_A2)<-c('ID','LI_SG1','LI_SG2')
+
+compare_results_A2_SG<-merge(myspread_results_A2_SG,old_res_A2,by='ID',all.x = T)
+
+#-----------------------------------------------------------------------------------------------------------------------#
+
+#-----------------------------------------------------------------------------------------------------------------------#
+
+#Print correlation matrix plots to check association between the old LI and new glm-derived LI measures.
+psych::pairs.panels(compare_results_A2_SG[,c('glm_LI_SG1','glm_LI_SG2','LI_SG1','LI_SG2')],cex.cor=1)
+
+#-----------------------------------------------------------------------------------------------------------------------#

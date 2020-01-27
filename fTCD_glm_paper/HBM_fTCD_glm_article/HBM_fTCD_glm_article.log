@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019) (preloaded format=pdflatex 2019.9.13)  21 JAN 2020 10:16
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019) (preloaded format=pdflatex 2019.9.13)  27 JAN 2020 10:16
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1002,98 +1002,105 @@ Package pdftex.def Info: HBM_fTCD_glm_article_files/figure-latex/ftcd_response-
 LaTeX Font Info:    Font shape `T1/stix/bx/n' in size <7> not available
 (Font)              Font shape `T1/stix/b/n' tried instead on input line 224.
 [2] [3]
-<HBM_fTCD_glm_article_files/figure-latex/double_gamma_plot-1.pdf, id=84, 355.32
+<HBM_fTCD_glm_article_files/figure-latex/double_gamma_plot-1.pdf, id=87, 355.32
 75pt x 279.0425pt>
 File: HBM_fTCD_glm_article_files/figure-latex/double_gamma_plot-1.pdf Graphic f
 ile (type pdf)
 <use HBM_fTCD_glm_article_files/figure-latex/double_gamma_plot-1.pdf>
 Package pdftex.def Info: HBM_fTCD_glm_article_files/figure-latex/double_gamma_p
-lot-1.pdf  used on input line 330.
+lot-1.pdf  used on input line 352.
 (pdftex.def)             Requested size: 355.32661pt x 279.04181pt.
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
-
 [4]
-<HBM_fTCD_glm_article_files/figure-latex/sustained-1.pdf, id=102, 355.3275pt x 
+<HBM_fTCD_glm_article_files/figure-latex/sustained-1.pdf, id=107, 355.3275pt x 
 269.005pt>
 File: HBM_fTCD_glm_article_files/figure-latex/sustained-1.pdf Graphic file (typ
 e pdf)
 <use HBM_fTCD_glm_article_files/figure-latex/sustained-1.pdf>
 Package pdftex.def Info: HBM_fTCD_glm_article_files/figure-latex/sustained-1.pd
-f  used on input line 420.
+f  used on input line 442.
 (pdftex.def)             Requested size: 355.32661pt x 269.00433pt.
 [5] [6] [7]
-<HBM_fTCD_glm_article_files/figure-latex/para_modulation-1.pdf, id=159, 427.597
+<HBM_fTCD_glm_article_files/figure-latex/para_modulation-1.pdf, id=165, 427.597
 5pt x 341.275pt>
 File: HBM_fTCD_glm_article_files/figure-latex/para_modulation-1.pdf Graphic fil
 e (type pdf)
 <use HBM_fTCD_glm_article_files/figure-latex/para_modulation-1.pdf>
 Package pdftex.def Info: HBM_fTCD_glm_article_files/figure-latex/para_modulatio
-n-1.pdf  used on input line 670.
+n-1.pdf  used on input line 703.
 (pdftex.def)             Requested size: 427.59645pt x 341.27415pt.
+[8]
 </Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/
-canonical_sim_plot.png, id=161, 2395.95125pt x 2249.40375pt>
+canonical_sim_plot.png, id=182, 2395.95125pt x 2249.40375pt>
 File: /Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMe
 thod/canonical_sim_plot.png Graphic file (type png)
 <use /Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMet
 hod/canonical_sim_plot.png>
 Package pdftex.def Info: /Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_projec
-t/simulations_newMethod/canonical_sim_plot.png  used on input line 755.
+t/simulations_newMethod/canonical_sim_plot.png  used on input line 788.
 (pdftex.def)             Requested size: 406.00784pt x 381.15794pt.
-[8]
 </Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/
-Sim_gamma.png, id=175, 2395.95125pt x 2249.40375pt>
+Sim_gamma.png, id=183, 2395.95125pt x 2249.40375pt>
 File: /Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMe
 thod/Sim_gamma.png Graphic file (type png)
 <use /Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMet
 hod/Sim_gamma.png>
 Package pdftex.def Info: /Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_projec
-t/simulations_newMethod/Sim_gamma.png  used on input line 770.
+t/simulations_newMethod/Sim_gamma.png  used on input line 803.
 (pdftex.def)             Requested size: 304.50781pt x 285.87704pt.
 </Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/
-Sim_canonical.png, id=176, 2395.95125pt x 2249.40375pt>
+Sim_canonical.png, id=184, 2395.95125pt x 2249.40375pt>
 File: /Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMe
 thod/Sim_canonical.png Graphic file (type png)
 <use /Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMet
 hod/Sim_canonical.png>
 Package pdftex.def Info: /Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_projec
-t/simulations_newMethod/Sim_canonical.png  used on input line 774.
+t/simulations_newMethod/Sim_canonical.png  used on input line 809.
 (pdftex.def)             Requested size: 304.50781pt x 285.87704pt.
-LaTeX Font Info:    Try loading font information for OMS+stix on input line 810
+[9]
+<HBM_fTCD_glm_article_files/figure-latex/contrast_task_plot-1.pdf, id=198, 427.
+5975pt x 344.28625pt>
+File: HBM_fTCD_glm_article_files/figure-latex/contrast_task_plot-1.pdf Graphic 
+file (type pdf)
+<use HBM_fTCD_glm_article_files/figure-latex/contrast_task_plot-1.pdf>
+Package pdftex.def Info: HBM_fTCD_glm_article_files/figure-latex/contrast_task_
+plot-1.pdf  used on input line 862.
+(pdftex.def)             Requested size: 427.59645pt x 344.2854pt.
+LaTeX Font Info:    Try loading font information for OMS+stix on input line 883
 .
-LaTeX Font Info:    No file OMSstix.fd. on input line 810.
+LaTeX Font Info:    No file OMSstix.fd. on input line 883.
 
 LaTeX Font Warning: Font shape `OMS/stix/m/n' undefined
 (Font)              using `OMS/cmsy/m/n' instead
-(Font)              for symbol `textbullet' on input line 810.
+(Font)              for symbol `textbullet' on input line 883.
 
-(./HBM_fTCD_glm_article.bbl [9] [10])
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 851.
-[11] [12 <./Kim_2019_MCA.png>] [13 <./HBM_fTCD_glm_article_files/figure-latex/f
+(./HBM_fTCD_glm_article.bbl [10] [11])
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 924.
+[12] [13 <./Kim_2019_MCA.png>] [14 <./HBM_fTCD_glm_article_files/figure-latex/f
 tcd_response-1.pdf> <./HBM_fTCD_glm_article_files/figure-latex/double_gamma_plo
-t-1.pdf>] [14 <./HBM_fTCD_glm_article_files/figure-latex/sustained-1.pdf>] [15 
-<./HBM_fTCD_glm_article_files/figure-latex/para_modulation-1.pdf>] [16 </Volume
+t-1.pdf>] [15 <./HBM_fTCD_glm_article_files/figure-latex/sustained-1.pdf>] [16 
+<./HBM_fTCD_glm_article_files/figure-latex/para_modulation-1.pdf>] [17 </Volume
 s/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/canonica
-l_sim_plot.png>] [17 </Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/s
+l_sim_plot.png>] [18 </Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/s
 imulations_newMethod/Sim_gamma.png> </Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTC
-D_glm_project/simulations_newMethod/Sim_canonical.png>]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 851.
+D_glm_project/simulations_newMethod/Sim_canonical.png>] [19 <./HBM_fTCD_glm_art
+icle_files/figure-latex/contrast_task_plot-1.pdf>]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 924.
 (./HBM_fTCD_glm_article.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 851.
-Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 851.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 924.
+Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 924.
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 851.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 924.
  ) 
 Here is how much of TeX's memory you used:
- 14821 strings out of 492616
- 210090 string characters out of 6129481
- 317483 words of memory out of 5000000
- 18347 multiletter control sequences out of 15000+600000
+ 14846 strings out of 492616
+ 210984 string characters out of 6129481
+ 316649 words of memory out of 5000000
+ 18364 multiletter control sequences out of 15000+600000
  96655 words of font info for 118 fonts, out of 8000000 for 9000
  1167 hyphenation exceptions out of 8191
- 43i,15n,49p,553b,495s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 43i,15n,49p,553b,507s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2019/texmf-dist/fonts/enc/dvips/stix/stix-t1.enc}</usr/lo
 cal/texlive/2019/texmf-dist/fonts/type1/public/stix/STIXGeneral-Bold.pfb></usr/
 local/texlive/2019/texmf-dist/fonts/type1/public/stix/STIXGeneral-Italic.pfb></
@@ -1104,10 +1111,10 @@ b></usr/local/texlive/2019/texmf-dist/fonts/type1/public/stix/stix-mathex.pfb><
 r/local/texlive/2019/texmf-dist/fonts/type1/public/stix/stix-mathrm-bold.pfb></
 usr/local/texlive/2019/texmf-dist/fonts/type1/public/stix/stix-mathrm.pfb></usr
 /local/texlive/2019/texmf-dist/fonts/type1/public/stix/stix-mathscr.pfb>
-Output written on HBM_fTCD_glm_article.pdf (17 pages, 1454350 bytes).
+Output written on HBM_fTCD_glm_article.pdf (19 pages, 1486706 bytes).
 PDF statistics:
- 442 PDF objects out of 1000 (max. 8388607)
- 389 compressed objects within 4 object streams
- 125 named destinations out of 1000 (max. 500000)
- 305 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 473 PDF objects out of 1000 (max. 8388607)
+ 414 compressed objects within 5 object streams
+ 132 named destinations out of 1000 (max. 500000)
+ 310 words of extra memory for PDF output out of 10000 (max. 10000000)
 

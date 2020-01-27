@@ -4,45 +4,45 @@ The top-level auxiliary file: HBM_fTCD_glm_article.aux
 The style file: WileyNJD-AMA.bst
 Database file #1: bibfile.bib
 Warning--empty author in Henson2004
-You've used 29 entries,
+You've used 33 entries,
             2054 wiz_defined-function locations,
-            728 strings with 10386 characters,
-and the built_in function-call counts, 5238 in all, are:
-= -- 474
-> -- 268
+            757 strings with 11155 characters,
+and the built_in function-call counts, 5918 in all, are:
+= -- 540
+> -- 298
 < -- 0
-+ -- 119
-- -- 90
-* -- 573
-:= -- 981
-add.period$ -- 35
-call.type$ -- 29
++ -- 132
+- -- 99
+* -- 646
+:= -- 1106
+add.period$ -- 39
+call.type$ -- 33
 change.case$ -- 2
 chr.to.int$ -- 0
-cite$ -- 30
-duplicate$ -- 253
-empty$ -- 473
-format.name$ -- 90
-if$ -- 1154
+cite$ -- 34
+duplicate$ -- 289
+empty$ -- 537
+format.name$ -- 99
+if$ -- 1309
 int.to.chr$ -- 0
-int.to.str$ -- 29
-missing$ -- 28
-newline$ -- 95
-num.names$ -- 30
-pop$ -- 52
+int.to.str$ -- 33
+missing$ -- 32
+newline$ -- 107
+num.names$ -- 34
+pop$ -- 58
 preamble$ -- 1
 purify$ -- 0
 quote$ -- 0
-skip$ -- 33
+skip$ -- 37
 stack$ -- 0
 substring$ -- 0
-swap$ -- 28
+swap$ -- 32
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 0
 warning$ -- 1
-while$ -- 29
-width$ -- 31
-write$ -- 310
+while$ -- 33
+width$ -- 35
+write$ -- 352
 (There was 1 warning)

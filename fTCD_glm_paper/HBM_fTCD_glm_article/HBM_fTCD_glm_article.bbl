@@ -105,19 +105,33 @@ Lindquist Martin~A., Loh Ji~Meng, Atlas Lauren~Y., Wager Tor~D.. Modeling the
   {\it NeuroImage. }2009;45(1, Supplement 1):S187 - S198.
 \newblock Mathematics in Brain Imaging.
 
+\bibitem{Lindquist_2008}
+Lindquist Martin~A.. The Statistical Analysis of fMRI Data.  {\it Statistical
+  Science. }2008;23(4):439--464.
+
+\bibitem{Tabelow_2011}
+Tabelow Karsten, Polzehl J\"org. Statistical Parametric Maps for Functional MRI
+  Experiments in {R}: The Package {fmri}.  {\it Journal of Statistical
+  Software. }2011;44(11):1--21.
+
 \bibitem{Draper_1998}
 Draper N.R., Smith H.. {\it Applied regression analysis}.
 \newblock No.~v. 1 in Wiley series in probability and statistics: Texts and
   references sectionWiley; 1998.
 
-\bibitem{Lindquist_2008}
-Lindquist Martin~A.. The Statistical Analysis of fMRI Data.  {\it Statistical
-  Science. }2008;23(4):439--464.
-
 \bibitem{Pinheiro_2019}
 Pinheiro Jose, Bates Douglas, DebRoy Saikat, Sarkar Deepayan, {R Core Team} .
   {nlme}: Linear and Nonlinear Mixed Effects Models2019.
 \newblock R package version 3.1-140.
+
+\bibitem{Eddelbuettel_2018}
+Eddelbuettel Dirk, Balamuta James~Joseph. Extending R with C++: A Brief
+  Introduction to Rcpp.  {\it The American Statistician. }2018;72(1):28-36.
+
+\bibitem{Eddelbuettel_2014}
+Eddelbuettel Dirk, Sanderson Conrad. RcppArmadillo: Accelerating R with
+  high-performance C++ linear algebra.  {\it Computational Statistics {\&} Data
+  Analysis. }2014;71:1054 - 1063.
 
 \bibitem{Gelman_2007}
 Gelman Andrew, Hill Jennifer. {\it Data analysis using regression and
@@ -145,5 +159,10 @@ Mumford Jeanette~A., Poline Jean-Baptiste, Poldrack Russell~A..
 \bibitem{Bruckert2016}
 Bruckert Lisa. {Is language laterality related to language abilities ?}
 \newblock ThesisUniversity of Oxford2016.
+
+\bibitem{Woodhead_2018}
+Woodhead Z.V.J., Rutherford H.A., Bishop D.V.M.. Measurement of language
+  laterality using functional transcranial Doppler ultrasound: a comparison of
+  different tasks.  {\it Wellcome Open Res 2018. }2018;3(104).
 
 \end{thebibliography}

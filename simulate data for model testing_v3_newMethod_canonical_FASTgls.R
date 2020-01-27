@@ -97,8 +97,8 @@ for(i in 1:100)
   y <- b0 + b1*stim1 + b2*stim2 + b3*t + b4*(t^2) + b5*(t^3) + b6*signal + b7*stim1_signal + eps
   sim_data = data.frame(y = y, t=t, signal = signal,stim1=stim1,stim2=stim2,stim1_signal=stim1_signal)
   sim_data$signal<-as.factor(sim_data$signal)
-  #ggplot(sim_data,aes(x=t,y=y))+geom_point(aes(colour=signal))+theme_bw()+theme(legend.position = 'top')
-  
+  #ggplot(sim_data,aes(x=t,y=y))+geom_point(aes(colour=signal))+theme_bw()+theme(legend.position = 'top') + xlab('Time')+ylab('Blood flow velocity')
+  #ggsave(filename = '/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/canonical_sim_plot.PNG',plot=canon.plot)
   #=========================================================================================================#
   
   #---------------------------------------------------------------------------------------------------------------#

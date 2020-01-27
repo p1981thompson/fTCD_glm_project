@@ -74,7 +74,7 @@ fTCD_glm_A2_AC<-function(path,order)
   filename1<-list.files(path,pattern = '.exp')
   
   ## Set parameters
-  samplingrate <- 25 # Sampling rate after downsampling. Raw data is 100Hz, we take 1 in every 4 samples
+  samplingrate <- 5 # Sampling rate after downsampling. Raw data is 100Hz, we take 1 in every 4 samples
   heartratemax <- 125
   
   # set up data.frame to hold the outputted parameter estimates from the GLMs.
@@ -101,9 +101,9 @@ fTCD_glm_A2_AC<-function(path,order)
     
     wantcols = c(2,3,4,9) #sec, L, R,marker #select columns of interest to put in shortdat
     shortdat = data.frame(mydata[,wantcols])
-    rawdata = filter(shortdat, row_number() %% 4 == 0) # downsample to 25 Hz by taking every 4th point
+    rawdata = filter(shortdat, row_number() %% 20 == 0) # downsample to 25 Hz by taking every 4th point
     allpts = nrow(rawdata) # total N points in long file
-    rawdata[,1] = (seq(from=1,to=allpts*4,by=4)-1)/100 #create 1st column which is time in seconds from start
+    rawdata[,1] = (seq(from=1,to=allpts*20,by=20)-1)/100 #create 1st column which is time in seconds from start
     colnames(rawdata) = c("sec","L","R","marker")
     
     #----------------------------------------------------------
@@ -293,7 +293,7 @@ fTCD_glm_A2_AC<-function(path,order)
       
       y <- .gammaHRF(0:(durations[1] * scale)/scale, par) 
       
-      stimulus <- convolve(stimulus, rev(y), type = "open")
+      stimulus <-  rcpp_convolve(a=stimulus, b=rev(y))
       stimulus <- stimulus[unique((scale:scans)%/%(scale^2 * TR)) * scale^2 * TR]/(scale^2 * TR)
       stimulus <- stimulus - mean(stimulus)
       return(stimulus)
@@ -367,7 +367,7 @@ fTCD_glm_A2_AC<-function(path,order)
     # Uses autocorrelated errors via gls model. (uses the 'nlme' package to achieve this error structure).
     
     myfit <- gls(y~stim1+stim2+t+I(t^2)+I(t^3)+signal+stim1_signal,data=mydata,
-                 correlation=corAR1(form=~t))
+                 correlation=corAR1(form=~t|signal))
     
     print(names(myfit$coefficients))
     
