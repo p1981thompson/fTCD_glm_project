@@ -346,7 +346,7 @@ startratio<-(min(mydata2[mydata2$time>=timewindow1 & mydata2$time<=timewindow2,'
 ```
 
 
-The set of basis functions are constructed following the method described by Lindquist [@Lindquist_2009]. Basis functions are used in non-parametric regression and are an extension to parametric regression. Typically, parametric linear regression will model an outcome measure, $y$, against some linear combination of regressors, $\mathbf{X\beta}$. The linear combination can be written as follows: 
+The set of basis functions are constructed following the method described by Lindquist [@Lindquist_2009], but the implementation is slightly different as the basis function are used for each individual's averaged epochs HRF rather than one basis per epoch. Basis functions are used in non-parametric regression and are an extension to parametric regression. Typically, parametric linear regression will model an outcome measure, $y$, against some linear combination of regressors, $\mathbf{X\beta}$. The linear combination can be written as follows: 
 
 \begin{align}
 g(x) = \mathbf{X\beta}
@@ -426,7 +426,7 @@ We make the assumption that the the errors are serially correlated with an autor
 \mathbf{\hat{\beta}} = (\mathbf{X}^{'}\Sigma^{-1}\mathbf{X})^{-1}\mathbf{X}^{'}\Sigma^{-1}\mathbf{y}
 \end{align}
 
-The estimation of the parameters requires computationally intensive linear algebra which is substantially increased when including the huge covariance matrix due to the large number of observations. To alleviate some of the computational load, we down sampled to 5Hz. This permitted the computations to be within a pragmatic time frame while maintaining reasonable parameter accuracy when using the \textbf{gls} function from the \textbf{R} package 'nlme' [@Pinheiro_2019]. Simulations documenting the comparison of etimators will be presented in full later in the article. The GLS-Rcp implementation used the \textbf{C++ Armadillo} linear algebra library via the R packages \textbf{Rcpp} and \textbf{RcppArmadillo}[@Eddelbuettel_2018; @Eddelbuettel_2014]. This substantially reduced computational time for the matrix algebra required to estimate the model parameters. Details of the functions can be found here: **INSERT LINK or ADD APPENDIX**. 
+The estimation of the parameters requires computationally intensive linear algebra which is substantially increased when including the huge covariance matrix due to the large number of observations. To alleviate some of the computational load, we down sampled to 5Hz. This permitted the computations to be within a pragmatic time frame while maintaining reasonable parameter accuracy when using the \textbf{gls} function from the \textbf{R} package 'nlme' [@Pinheiro_2019]. Simulations documenting the comparison of etimators will be presented in full later in the article. We explored whether a GLS-Rcpp implementation using the \textbf{C++ Armadillo} linear algebra library via the R packages \textbf{Rcpp} and \textbf{RcppArmadillo}[@Eddelbuettel_2018; @Eddelbuettel_2014] could substantially improve evaluation times. This substantially reduced computational time for the matrix algebra required to estimate the model parameters, but due to some assuptions made regarding the temporal correlation variance-covaraince matrix, some accuracy was lost. Details of the functions can be found here: **INSERT LINK or ADD APPENDIX**. For the remainder of the article, all evaluations use the R package \textbf{nlme} implementation of GLS. 
 
 
 ## Extracting laterality and contrasting tasks
@@ -564,7 +564,7 @@ Simulated data was generated to have temporally-correlated errors and a specific
 ** INSERT FIGURE 6 HERE**
 
 ```{r fig_sim0, echo=FALSE, fig.cap="Figure showing an example of the Canonical HRF simulated data", out.width = '80%'}
-knitr::include_graphics("/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/canonical_sim_plot")
+knitr::include_graphics("/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/simulations_newMethod/canonical_sim_plot.png")
 ```
 
 
@@ -590,6 +590,37 @@ The estimators all perform relatively similarly with non-distinct differences in
 ## Measuring laterality
 
 Functional transcranial doppler ultrasound can be used as a course approximate measure of neural activity in language-related areas of the brain via the blood flow in the right and left hemispheres' MCAs. In this example application of our implementation of the GLM method for fTCD data, we use data from Bruckett *et al.* [@Bruckert2016] which investigated whether FTCD ultrasonography could reliably assess functional lateralization across different language processes. The data are re-analysed using the GLM based method and laterality estimates from fMRI, traditional fTCD analysis and new fTCD GLM analysis techniques are compared using correlation. 
+
+**Add image - time series plot with traces for model.**
+<!--
+```{r fig_bruckett1, echo=FALSE, fig.cap="Linear model time series plot (Single Gamma  HRF)", out.width = '60%'}
+knitr::include_graphics("/Volumes/PSYHOME/PSYRES/pthompson/DVMB/fTCD_glm_project/Chpt4_fTCD_WordGen_rawdata/HRF_signals_plots_LISA_WG_AutoCor_Err_Downsampled5Hz_gamma.pdf")
+```
+-->
+
+**Add table - parameter estimates.**
+
+```{r table-simple2, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+require(pander)
+panderOptions('table.split.table', Inf)
+set.caption("Bruckett data - linear model parameters (GLS)")
+my.data <- "
+  Parameter Name       | Value
+  Intercept ($\\beta_{0}$) | 100 
+  Stimulus 1 ($\\beta_{1}$)     |   2.26
+  Stimulus 2 ($\\beta_{2}$)     |    -2.18
+  $Time$ ($\\beta_{3}$)     |    0.00002
+  $Time^{2}$ ($\\beta_{4}$)      |    -0.00000004
+  $Time^{3}$ ($\\beta_{5}$)      |    -0.000000005
+  Signal ($\\beta_{6}$)      |    -0.5
+  $Signal*Stimulus1$ ($\\beta_{7}$)      |    -0.5"
+df <- read.delim(textConnection(my.data),header=FALSE,sep="|",strip.white=TRUE,stringsAsFactors=FALSE)
+names(df) <- unname(as.list(df[1,])) # put headers on
+df <- df[-1,] # remove first row
+row.names(df)<-NULL
+pander(df, style = 'rmarkdown')
+
+```
 
 ## Using contrasts to assess laterality between tests
 
